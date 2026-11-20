@@ -1,0 +1,134 @@
+{
+  ".github/workflows/ci.yml": {
+    "mtime": 1795218309.668815,
+    "seen": 1795218491.6405492,
+    "ast_hash": "83445ad32f2c27ae0bf3e2084666f470",
+    "semantic_hash": ""
+  },
+  "docker-compose.yml": {
+    "mtime": 1795218309.6332977,
+    "seen": 1795218491.6405547,
+    "ast_hash": "85b17cc381dfe9ccdefe28554607e997",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1795218317.2061572,
+    "seen": 1795218491.6405575,
+    "ast_hash": "a68b7913db0cebdb567eb44367af3979",
+    "semantic_hash": ""
+  },
+  "packages/crypto/package.json": {
+    "mtime": 1795218309.702299,
+    "seen": 1795218491.6405592,
+    "ast_hash": "29ec014a8c9bf3ff724190bc7e0335af",
+    "semantic_hash": ""
+  },
+  "packages/crypto/src/constants.ts": {
+    "mtime": 1795218372.8048048,
+    "seen": 1795218491.6405609,
+    "ast_hash": "bc9f18f446fc657a1c1d270fda5d0782",
+    "semantic_hash": ""
+  },
+  "packages/crypto/src/encoding.ts": {
+    "mtime": 1795218372.8642843,
+    "seen": 1795218491.6405618,
+    "ast_hash": "044865cbf416baa1f4cbeabc47880062",
+    "semantic_hash": ""
+  },
+  "packages/crypto/src/errors.ts": {
+    "mtime": 1795218372.8428614,
+    "seen": 1795218491.6405632,
+    "ast_hash": "dd2b4360d10c14a09e0030c82cf3ec06",
+    "semantic_hash": ""
+  },
+  "packages/crypto/src/index.ts": {
+    "mtime": 1795218373.038031,
+    "seen": 1795218491.6405642,
+    "ast_hash": "0761ab3d8deb55f6d8b8c2df8576f28f",
+    "semantic_hash": ""
+  },
+  "packages/crypto/src/kdf.ts": {
+    "mtime": 1795218372.9407134,
+    "seen": 1795218491.6405652,
+    "ast_hash": "089ceccb614e7136e3731d2be6666b2c",
+    "semantic_hash": ""
+  },
+  "packages/crypto/src/note.ts": {
+    "mtime": 1795218373.0066173,
+    "seen": 1795218491.6405663,
+    "ast_hash": "dfaed72f3b3b42fbd9823107b11ae325",
+    "semantic_hash": ""
+  },
+  "packages/crypto/src/package.ts": {
+    "mtime": 1795218372.9734695,
+    "seen": 1795218491.6405673,
+    "ast_hash": "07911a24f9caf6652599953b8cd4ada4",
+    "semantic_hash": ""
+  },
+  "packages/crypto/src/subtle.ts": {
+    "mtime": 1795218372.9043622,
+    "seen": 1795218491.6405683,
+    "ast_hash": "6e365266b9b6fedcdc4a4850e6ab18b7",
+    "semantic_hash": ""
+  },
+  "packages/crypto/test/aes-gcm.test.ts": {
+    "mtime": 1795218455.751693,
+    "seen": 1795218491.6405694,
+    "ast_hash": "3b99ed935085237a2731a71a7430243b",
+    "semantic_hash": ""
+  },
+  "packages/crypto/test/helpers.ts": {
+    "mtime": 1795218440.182992,
+    "seen": 1795218491.6405706,
+    "ast_hash": "2f75c58b1d30323d0f32c90c32afeff4",
+    "semantic_hash": ""
+  },
+  "packages/crypto/test/kdf.test.ts": {
+    "mtime": 1795218440.2208843,
+    "seen": 1795218491.6405716,
+    "ast_hash": "e6b524396fc2ae4c2323de9236b3e0ab",
+    "semantic_hash": ""
+  },
+  "packages/crypto/test/note.test.ts": {
+    "mtime": 1795218440.283444,
+    "seen": 1795218491.640573,
+    "ast_hash": "3a73ba5f85e9f9bc237c8b4c049e7e99",
+    "semantic_hash": ""
+  },
+  "packages/crypto/tsconfig.json": {
+    "mtime": 1795218309.7305436,
+    "seen": 1795218491.6405742,
+    "ast_hash": "a6094fca367e311e85b142d115f59c25",
+    "semantic_hash": ""
+  },
+  "tsconfig.base.json": {
+    "mtime": 1795218309.4285593,
+    "seen": 1795218491.6405754,
+    "ast_hash": "56218f82a42c7140a830320907afe407",
+    "semantic_hash": ""
+  },
+  "vitest.config.ts": {
+    "mtime": 1795218309.4607916,
+    "seen": 1795218491.6405768,
+    "ast_hash": "8614b18abcdadcffe0851f9db3e86fb2",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1795218481.1792796,
+    "seen": 1795218491.6405778,
+    "ast_hash": "d57845ca0d12089b8acd502075155f69",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1795218481.1411538,
+    "seen": 1795218491.640579,
+    "ast_hash": "06bbf8f010cb5b6d8e27830d51d015e5",
+    "semantic_hash": ""
+  },
+  "package-lock.json": {
+    "mtime": 1795218317.2151444,
+    "seen": 1795218491.6405802,
+    "ast_hash": "bdabea9274a127f8618ea60516fa235f",
+    "semantic_hash": ""
+  }
+}
