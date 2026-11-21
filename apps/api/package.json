@@ -2,7 +2,7 @@
   "name": "@cn/api",
   "version": "0.1.0",
   "private": true,
-  "description": "K2 Backend-сервер API Crypto Notepad: хранит только зашифрованные пакеты",
+  "description": "K2 Backend-сервер API SkyrimCrypto: хранит только зашифрованные пакеты",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",

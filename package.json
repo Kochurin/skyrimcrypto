@@ -1,7 +1,7 @@
 {
-  "name": "crypto-notepad",
+  "name": "skyrimcrypto",
   "private": true,
-  "description": "Текстовый редактор с клиентским шифрованием (Zero-Knowledge Cloud Notepad)",
+  "description": "SkyrimCrypto — текстовый редактор с клиентским шифрованием (Zero-Knowledge Cloud Notepad)",
   "type": "module",
   "workspaces": [
     "packages/*",

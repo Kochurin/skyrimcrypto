@@ -1,5 +1,5 @@
 /**
- * @cn/crypto — K1.2 Криптомодуль Crypto Notepad (ЛР7).
+ * @cn/crypto — K1.2 Криптомодуль SkyrimCrypto (ЛР7).
  * Реализует интерфейс ICrypto: deriveKey, encryptNote, decryptNote.
  * Работает только в браузере пользователя; на сервер уходит лишь EncryptedPackage.
  */

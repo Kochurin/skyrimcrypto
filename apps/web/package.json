@@ -2,7 +2,7 @@
   "name": "@cn/web",
   "version": "0.1.0",
   "private": true,
-  "description": "K1.1 Веб-редактор Crypto Notepad: шифрует заметки в браузере",
+  "description": "K1.1 Веб-редактор SkyrimCrypto: шифрует заметки в браузере",
   "type": "module",
   "scripts": {
     "dev": "vite",

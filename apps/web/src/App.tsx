@@ -16,8 +16,8 @@ export function App() {
             navigate('/');
           }}
         >
-          <span className="logo" aria-hidden="true">CN</span>
-          Crypto Notepad
+          <span className="logo" aria-hidden="true">SC</span>
+          SkyrimCrypto
         </a>
         <span className="chip" title="Шифрование AES-256-GCM в браузере; сервер хранит только шифротекст">
           Zero-Knowledge
