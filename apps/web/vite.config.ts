@@ -3,7 +3,8 @@ import react from '@vitejs/plugin-react';
 import { CSP, SECURITY_HEADERS } from './security-headers.js';
 
 // K1.1 Веб-редактор. В разработке и в предпросмотре сборки запросы /api проксируются на K2 (apps/api).
-const api = { '/api': 'http://127.0.0.1:8787' };
+// API_TARGET — другой адрес API (e2e-тесты поднимают свой сервер в памяти)
+const api = { '/api': process.env.API_TARGET ?? 'http://127.0.0.1:8787' };
 
 export default defineConfig({
   plugins: [react()],

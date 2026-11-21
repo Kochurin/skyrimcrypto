@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
 import { applyTheme } from './motion/theme.js';
+import { registerServiceWorker } from './pwa.js';
 import '@fontsource-variable/onest';
 import '@fontsource/martian-mono/400.css';
 import './styles.css';
@@ -21,3 +22,5 @@ createRoot(root).render(
     <App />
   </StrictMode>,
 );
+
+registerServiceWorker();

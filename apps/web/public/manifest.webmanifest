@@ -1,0 +1,16 @@
+{
+  "name": "SkyrimCrypto — зашифрованные заметки",
+  "short_name": "SkyrimCrypto",
+  "description": "Заметки шифруются в браузере: сервер хранит только шифротекст",
+  "lang": "ru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#151513",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

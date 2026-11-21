@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1795247809.9787128,
-    "seen": 1795248186.6677055,
-    "ast_hash": "7383e27194ecd990b37b557aed93ac78",
+    "mtime": 1795261413.0303485,
+    "seen": 1795261828.7072117,
+    "ast_hash": "fb25809333119ddd2c173f1d188cd826",
     "semantic_hash": ""
   },
   "packages/crypto/package.json": {
@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "vitest.config.ts": {
-    "mtime": 1795220283.852872,
-    "seen": 1795220457.9696681,
-    "ast_hash": "7fb844b4314cb8a7ba57b676e73503cb",
+    "mtime": 1795260018.296548,
+    "seen": 1795261828.7072377,
+    "ast_hash": "5698a8d5a6fe4bf289a094656fdc4d30",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795248165.535977,
-    "seen": 1795248186.6677322,
-    "ast_hash": "2d8a123248664fb432d86ff9c60201ff",
+    "mtime": 1795261820.1638343,
+    "seen": 1795261828.7072415,
+    "ast_hash": "847a66b31e646b17897a94c85924a1d6",
     "semantic_hash": ""
   },
   ".claude/settings.json": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/main.tsx": {
-    "mtime": 1795236288.6155555,
-    "seen": 1795236461.9218943,
-    "ast_hash": "daa2397c0fd7528cfeb02f97c105735c",
+    "mtime": 1795261584.2827432,
+    "seen": 1795261828.7071786,
+    "ast_hash": "7418c9c5ee86ae64db84817b66eed2bd",
     "semantic_hash": ""
   },
   "apps/web/src/messages.ts": {
@@ -300,15 +300,15 @@
     "semantic_hash": ""
   },
   "apps/web/vite.config.ts": {
-    "mtime": 1795246195.9552271,
-    "seen": 1795246524.5755122,
-    "ast_hash": "cef273faf854ee2d53a529725220b6e3",
+    "mtime": 1795260082.2750535,
+    "seen": 1795261828.7072031,
+    "ast_hash": "5c600dbfd2c68a7913a62fb809f742e8",
     "semantic_hash": ""
   },
   "apps/web/index.html": {
-    "mtime": 1795220608.384352,
-    "seen": 1795221924.7067401,
-    "ast_hash": "4aae7f19bfb105d0098668d6d3754212",
+    "mtime": 1795261584.3062925,
+    "seen": 1795261828.7072425,
+    "ast_hash": "163ee3aab23844fbc4a5119e67c8c341",
     "semantic_hash": ""
   },
   "apps/web/public/favicon.svg": {
@@ -575,10 +575,100 @@
     "ast_hash": "7c83840a4c88e72644b26eb4b146128b",
     "semantic_hash": ""
   },
+  "apps/api/src/memory-server.ts": {
+    "mtime": 1795260075.7791862,
+    "seen": 1795261828.7071207,
+    "ast_hash": "e3b3b754b5d38bfd92f368a63e4b7844",
+    "semantic_hash": ""
+  },
+  "apps/web/public/sw.js": {
+    "mtime": 1795261577.2372494,
+    "seen": 1795261828.707151,
+    "ast_hash": "56ca2bf2b6217f26ac78d28062e06297",
+    "semantic_hash": ""
+  },
+  "apps/web/src/pwa.ts": {
+    "mtime": 1795261577.2939155,
+    "seen": 1795261828.7071917,
+    "ast_hash": "efbeb2133b9fffddf95e267cdc571025",
+    "semantic_hash": ""
+  },
+  "e2e/app.spec.ts": {
+    "mtime": 1795260727.5374546,
+    "seen": 1795261828.707207,
+    "ast_hash": "09398ace6cb90335fc3608e70c8fa385",
+    "semantic_hash": ""
+  },
+  "e2e/notes.spec.ts": {
+    "mtime": 1795260608.0264056,
+    "seen": 1795261828.707208,
+    "ast_hash": "8597b40138238aa23768df21fb22a23e",
+    "semantic_hash": ""
+  },
+  "e2e/pwa.spec.ts": {
+    "mtime": 1795261639.9452999,
+    "seen": 1795261828.707209,
+    "ast_hash": "32d405185b02d988cff7dba9efae93ab",
+    "semantic_hash": ""
+  },
+  "load/notes.k6.js": {
+    "mtime": 1795261405.4235673,
+    "seen": 1795261828.7072105,
+    "ast_hash": "f49cc76b05bfd195628dc1a9fe525ec1",
+    "semantic_hash": ""
+  },
+  "packages/crypto/test/edge-cases.test.ts": {
+    "mtime": 1795260042.4320612,
+    "seen": 1795261828.7072258,
+    "ast_hash": "d39b63e3ad559e676f5feba3d41f3ede",
+    "semantic_hash": ""
+  },
+  "playwright.config.ts": {
+    "mtime": 1795260581.9316087,
+    "seen": 1795261828.707232,
+    "ast_hash": "f869b890a23b729c43e75b50918a93fa",
+    "semantic_hash": ""
+  },
+  "scripts/load.mjs": {
+    "mtime": 1795261405.4758825,
+    "seen": 1795261828.7072344,
+    "ast_hash": "94b54833916aeb91adf624f75e924744",
+    "semantic_hash": ""
+  },
+  "scripts/make-icons.mjs": {
+    "mtime": 1795261622.83317,
+    "seen": 1795261828.7072353,
+    "ast_hash": "3db2e86f596637404075cfc046a78e34",
+    "semantic_hash": ""
+  },
+  "apps/web/public/icons/apple-touch-icon.png": {
+    "mtime": 1795261623.641829,
+    "seen": 1795261828.7072449,
+    "ast_hash": "b1f71016e5a243739b716c229f8f459c",
+    "semantic_hash": ""
+  },
+  "apps/web/public/icons/icon-192.png": {
+    "mtime": 1795261623.5591972,
+    "seen": 1795261828.7072458,
+    "ast_hash": "79409461391398ae8b1bcd8f4d269b19",
+    "semantic_hash": ""
+  },
+  "apps/web/public/icons/icon-512.png": {
+    "mtime": 1795261623.595773,
+    "seen": 1795261828.707248,
+    "ast_hash": "c36eaa016ce24001edf0058d30541984",
+    "semantic_hash": ""
+  },
+  "apps/web/public/icons/maskable-512.png": {
+    "mtime": 1795261623.6127715,
+    "seen": 1795261828.707249,
+    "ast_hash": "6d82a4297ee14062983931320a2b7a27",
+    "semantic_hash": ""
+  },
   "package-lock.json": {
-    "mtime": 1795221457.9005919,
-    "seen": 1795221924.7067428,
-    "ast_hash": "66451304a422a011445e20228251e06e",
+    "mtime": 1795260088.2001688,
+    "seen": 1795261828.7072515,
+    "ast_hash": "35c992706c7893e3c54c6c8e2257f28a",
     "semantic_hash": ""
   }
 }
