@@ -1,9 +1,13 @@
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest, type FastifyServerOptions } from 'fastify';
 import cookie from '@fastify/cookie';
 import jwt from '@fastify/jwt';
+import { randomUUID } from 'node:crypto';
 import { isCryptoError } from '@cn/crypto';
-import { MAX_ACCOUNT_PASSWORD, type AuthService, type SessionUser } from './auth.js';
+import { MAX_ACCOUNT_PASSWORD, normalizeLogin, type AuthService, type SessionUser } from './auth.js';
 import { ApiError, MAX_CIPHERTEXT_BYTES, type NotesService } from './notes.js';
+import type { SecurityLog } from './security/audit.js';
+import type { SecurityGuard } from './security/guard.js';
+import type { IRevokedTokenStore } from './security/types.js';
 
 /**
  * IF2 INotesApi (ЛР7): HTTP API сервера.
@@ -26,13 +30,83 @@ export interface AppDeps {
   checks: Record<string, () => Promise<void>>;
   /** Секрет подписи JWT (HS256). */
   jwtSecret: string;
-  /** Cookie только по HTTPS (в продакшене — true, этап 5). */
+  /** Cookie только по HTTPS и заголовок HSTS (в продакшене — true). */
   cookieSecure?: boolean;
+  /** Число доверенных прокси перед сервером (Caddy — 1); 0 — прокси нет. */
+  trustProxy?: number;
+  /** Этап 5: лимиты и блокировки (FR-12), журнал (FR-13), отозванные токены. */
+  security: {
+    guard: SecurityGuard;
+    audit: SecurityLog;
+    revoked: IRevokedTokenStore;
+  };
 }
 
 interface TokenPayload {
   sub: string;
   role: string;
+  /** Идентификатор токена — по нему токен отзывается при выходе. */
+  jti?: string;
+  exp?: number;
+}
+
+/** Что обработчик сообщает журналу о запросе (без содержимого). */
+interface AuditInfo {
+  userId?: string;
+  error?: string | undefined;
+  details: Record<string, unknown>;
+}
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    audit: AuditInfo;
+  }
+}
+
+/**
+ * Заголовки безопасности ответов API. Сам сайт получает свою CSP от Caddy (deploy/Caddyfile):
+ * ответы API — это JSON, им достаточно запретить всё.
+ */
+const API_SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+};
+
+/**
+ * Доверять ровно `hops` ближайшим прокси (proxy-addr: i — номер звена от сокета).
+ * IP клиента — первый адрес до доверенных прокси; всё, что клиент дописал сам левее, игнорируется.
+ */
+function trustHops(hops: number): boolean | ((addr: string, i: number) => boolean) {
+  return hops > 0 ? (_addr: string, i: number) => i < hops : false;
+}
+
+/** Какие ответы каких маршрутов пишутся в журнал безопасности (FR-13). */
+function eventType(route: string, status: number, error: string | undefined): string | null {
+  if (error === 'RATE_LIMITED' || error === 'BLOCKED') return null; // их пишет guard
+  if (status >= 500) return 'server.error';
+  switch (route) {
+    case 'POST /api/auth/login':
+      if (status === 200) return 'auth.login';
+      if (error === 'LOCKED') return 'auth.locked';
+      return 'auth.login_failed';
+    case 'POST /api/auth/register':
+      return status === 201 ? 'auth.register' : 'auth.register_failed';
+    case 'POST /api/auth/logout':
+      return 'auth.logout';
+    case 'POST /api/notes':
+      return status === 201 ? 'note.create' : 'note.rejected';
+    case 'DELETE /api/notes/:id':
+      if (status === 204) return 'note.delete';
+      if (status === 403) return 'note.forbidden';
+      return null;
+    default:
+      return null;
+  }
 }
 
 declare module '@fastify/jwt' {
@@ -55,7 +129,34 @@ const credentialsSchema = {
 
 export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] = false): FastifyInstance {
   // Логгер Fastify пишет метод, путь и код ответа; тела запросов не пишет (FR-13).
-  const app = Fastify({ logger, bodyLimit: BODY_LIMIT });
+  const app = Fastify({ logger, bodyLimit: BODY_LIMIT, trustProxy: trustHops(deps.trustProxy ?? 0) });
+  const { guard, audit, revoked } = deps.security;
+  const secure = deps.cookieSecure ?? false;
+
+  app.decorateRequest('audit', null as unknown as AuditInfo);
+
+  // FR-12 / NFR-11: лимиты и блокировки — до любой обработки запроса
+  app.addHook('onRequest', async (req) => {
+    req.audit = { details: {} };
+    guard.check(req.ip, req.method, req.url.split('?')[0] ?? req.url);
+  });
+
+  // Учёт ответов: перебор file_id (404) и журнал безопасности
+  app.addHook('onResponse', async (req, reply) => {
+    const path = req.url.split('?')[0] ?? req.url;
+    const status = reply.statusCode;
+    await guard.observe(req.ip, req.method, path, status).catch((err: unknown) => req.log.error({ err }, 'не удалось записать блокировку'));
+    const route = `${req.method} ${req.routeOptions.url ?? path}`;
+    const type = eventType(route, status, req.audit?.error);
+    if (!type) return;
+    audit.record({
+      type,
+      ip: req.ip,
+      userId: req.audit?.userId ?? null,
+      status,
+      details: { ...req.audit?.details, ...(req.audit?.error ? { error: req.audit.error } : {}) },
+    });
+  });
 
   app.register(cookie);
   app.register(jwt, {
@@ -68,14 +169,20 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
   // Ответы с заметками не должны оседать ни в каком кэше.
   app.addHook('onSend', async (_req, reply, payload) => {
     reply.header('Cache-Control', 'no-store');
+    for (const [name, value] of Object.entries(API_SECURITY_HEADERS)) reply.header(name, value);
+    // NFR-10: HSTS только когда сайт действительно работает по HTTPS
+    if (secure) reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     return payload;
   });
 
   app.setErrorHandler((err, req, reply) => {
+    if (req.audit) req.audit.error = isCryptoError(err) || err instanceof ApiError ? err.code : undefined;
     if (isCryptoError(err)) {
       return reply.code(400).send({ error: err.code, message: err.message });
     }
     if (err instanceof ApiError) {
+      const retryAfter = (err as ApiError & { retryAfterSec?: number }).retryAfterSec;
+      if (retryAfter) reply.header('Retry-After', String(retryAfter));
       return reply.code(err.statusCode).send({ error: err.code, message: err.message });
     }
     const status = (err as { statusCode?: number }).statusCode;
@@ -94,7 +201,11 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
     if (!req.cookies[SESSION_COOKIE]) return null;
     try {
       const payload = await req.jwtVerify<TokenPayload>({ onlyCookie: true });
-      return await deps.auth.current(payload.sub);
+      // Токен, отозванный при выходе, больше не действует (даже если cookie сохранили)
+      if (!payload.jti || (await revoked.isRevoked(payload.jti))) return null;
+      const user = await deps.auth.current(payload.sub);
+      if (user) req.audit.userId = user.id;
+      return user;
     } catch {
       return null;
     }
@@ -109,11 +220,12 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
   async function startSession(reply: FastifyReply, user: SessionUser) {
     // JWT лежит в httpOnly-cookie: скрипты страницы (в том числе при XSS) его не прочитают.
     // SameSite=Strict — cookie не уходит с чужих сайтов (защита от CSRF).
-    const token = await reply.jwtSign({ sub: user.id, role: user.role });
+    const token = await reply.jwtSign({ sub: user.id, role: user.role, jti: randomUUID() });
+    reply.request.audit.userId = user.id;
     reply.setCookie(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: 'strict',
-      secure: deps.cookieSecure ?? false,
+      secure,
       path: '/api',
       maxAge: SESSION_HOURS * 3600,
     });
@@ -123,17 +235,29 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
   // ---------- Учётные записи (FR-01) ----------
 
   app.post<{ Body: { login: string; password: string } }>('/api/auth/register', { schema: credentialsSchema }, async (req, reply) => {
+    req.audit.details.login = normalizeLogin(req.body.login);
     const user = await deps.auth.register(req.body.login, req.body.password);
     return reply.code(201).send(await startSession(reply, user));
   });
 
   app.post<{ Body: { login: string; password: string } }>('/api/auth/login', { schema: credentialsSchema }, async (req, reply) => {
+    req.audit.details.login = normalizeLogin(req.body.login);
     const user = await deps.auth.login(req.body.login, req.body.password);
     return reply.send(await startSession(reply, user));
   });
 
-  app.post('/api/auth/logout', async (_req, reply) => {
-    reply.clearCookie(SESSION_COOKIE, { path: '/api' });
+  app.post('/api/auth/logout', async (req, reply) => {
+    // Отзываем сам токен: даже если cookie где-то сохранилась, войти по ней уже нельзя
+    if (req.cookies[SESSION_COOKIE]) {
+      try {
+        const payload = await req.jwtVerify<TokenPayload>({ onlyCookie: true });
+        req.audit.userId = payload.sub;
+        if (payload.jti && payload.exp) await revoked.revoke(payload.jti, new Date(payload.exp * 1000));
+      } catch {
+        // просроченный или поддельный токен — просто стираем cookie
+      }
+    }
+    reply.clearCookie(SESSION_COOKIE, { path: '/api', httpOnly: true, sameSite: 'strict', secure });
     return reply.code(204).send();
   });
 
@@ -147,10 +271,13 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
   app.post<{ Querystring: { ttl?: string } }>('/api/notes', async (req, reply) => {
     const user = await optionalUser(req);
     const ttlDays = req.query.ttl === undefined ? undefined : Number(req.query.ttl);
+    if (ttlDays !== undefined) req.audit.details.ttlDays = ttlDays;
     const created = await deps.notes.create(req.body, {
       ownerId: user?.id ?? null,
       ...(ttlDays !== undefined ? { ttlDays } : {}),
     });
+    req.audit.details.noteId = created.id;
+    req.audit.details.sizeBytes = created.sizeBytes;
     return reply.code(201).send({ id: created.id, expiresAt: created.expiresAt.toISOString(), owned: user !== null });
   });
 
@@ -177,6 +304,7 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
   });
 
   app.delete<{ Params: { id: string } }>('/api/notes/:id', async (req, reply) => {
+    req.audit.details.noteId = req.params.id.slice(0, 36);
     const user = await requireUser(req);
     await deps.notes.delete(req.params.id, user.id);
     return reply.code(204).send();

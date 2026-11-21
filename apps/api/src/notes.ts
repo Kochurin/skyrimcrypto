@@ -42,6 +42,8 @@ export interface Logger {
 export interface CreatedNote {
   id: string;
   expiresAt: Date;
+  /** Размер шифротекста — для журнала (FR-13), не содержимое. */
+  sizeBytes: number;
 }
 
 export interface CreateOptions {
@@ -102,7 +104,7 @@ export class NotesService {
       });
       throw e;
     }
-    return { id, expiresAt };
+    return { id, expiresAt, sizeBytes: pkg.ciphertext.length };
   }
 
   /** FR-07. Выдача по file_id. null — заметки нет, она удалена или истёк срок хранения. */

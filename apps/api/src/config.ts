@@ -26,9 +26,30 @@ export interface Config {
   cookieSecure: boolean;
   /** Как часто удалять просроченные и помеченные заметки (FR-09), минут. */
   purgeIntervalMinutes: number;
+  /**
+   * Сколько прокси перед сервером (Caddy — 1). IP клиента берётся из X-Forwarded-For,
+   * но только из записи, добавленной этими прокси: подделанный клиентом заголовок не поможет обойти лимиты.
+   */
+  trustProxy: number;
+  /** FR-12 / NFR-11: лимиты и блокировки. */
+  guard: {
+    perMinute: number;
+    authPerMinute: number;
+    notFoundMax: number;
+    notFoundWindowMin: number;
+    blockHours: number;
+    allowlist: string[];
+  };
+  /** Сколько дней хранить журнал безопасности (FR-13, ротация). */
+  securityLogDays: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+  // В продакшене случайный секрет недопустим: при каждом перезапуске все сессии бы сбрасывались,
+  // а при нескольких экземплярах токены одного не принимал бы другой.
+  if (env.NODE_ENV === 'production' && (!env.JWT_SECRET || env.JWT_SECRET.length < 32)) {
+    throw new Error('JWT_SECRET обязателен в продакшене (не короче 32 символов)');
+  }
   return {
     host: env.API_HOST ?? '127.0.0.1',
     port: Number(env.API_PORT ?? 8787),
@@ -45,5 +66,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     jwtSecretGenerated: !env.JWT_SECRET,
     cookieSecure: env.COOKIE_SECURE === 'true',
     purgeIntervalMinutes: Number(env.PURGE_INTERVAL_MINUTES ?? 60),
+    trustProxy: Number(env.TRUST_PROXY_HOPS ?? 0),
+    guard: {
+      perMinute: Number(env.RATE_LIMIT_PER_MINUTE ?? 60),
+      authPerMinute: Number(env.AUTH_RATE_LIMIT_PER_MINUTE ?? 20),
+      notFoundMax: Number(env.NOT_FOUND_MAX ?? 100),
+      notFoundWindowMin: Number(env.NOT_FOUND_WINDOW_MIN ?? 10),
+      blockHours: Number(env.BLOCK_HOURS ?? 24),
+      allowlist: (env.IP_ALLOWLIST ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    },
+    securityLogDays: Number(env.SECURITY_LOG_DAYS ?? 180),
   };
 }

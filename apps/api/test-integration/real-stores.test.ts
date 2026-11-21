@@ -4,6 +4,8 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { decryptNote, encryptNote, type EncryptedPackage } from '@cn/crypto';
 import { buildApp, SESSION_COOKIE } from '../src/app.js';
 import { AuthService } from '../src/auth.js';
+import { SecurityLog } from '../src/security/audit.js';
+import { DEFAULT_GUARD, SecurityGuard } from '../src/security/guard.js';
 import { loadConfig } from '../src/config.js';
 import { NotesService } from '../src/notes.js';
 import { PostgresMetadataStore } from '../src/stores/postgres.js';
@@ -25,11 +27,15 @@ const s3 = new S3Client({
   credentials: { accessKeyId: config.s3.accessKeyId, secretAccessKey: config.s3.secretAccessKey },
 });
 const service = new NotesService(metadata, blobs, { ttlDays: 30, log: { error: () => {} } });
+const securityStore = metadata.security();
+const audit = new SecurityLog(securityStore, { error: () => {} }, { flushDelayMs: 1 });
+const guard = new SecurityGuard(securityStore, audit, { ...DEFAULT_GUARD, perMinute: 10_000, authPerMinute: 10_000 });
 const app = buildApp({
   notes: service,
   auth: new AuthService(metadata),
   checks: { db: () => metadata.ping(), s3: () => blobs.ping() },
   jwtSecret: 'integration-test-secret',
+  security: { guard, audit, revoked: securityStore },
 });
 const created: string[] = [];
 const logins: string[] = [];
@@ -158,5 +164,25 @@ describe('Интеграция: PostgreSQL 17 + MinIO', () => {
     expect(await service.purge()).toBeGreaterThanOrEqual(1);
     expect(await sql`select 1 from notes where id = ${id}`).toHaveLength(0);
     expect(await blobs.get(id)).toBeNull();
+  });
+
+  it('этап 5 в PostgreSQL: журнал, блокировки IP, отозванные токены', async () => {
+    const ip = `198.51.100.${Math.floor(Math.random() * 200)}`;
+    await securityStore.insertMany([{ at: new Date(), type: 'test.event', ip, userId: null, status: 200, details: { login: 'x', noteId: 'y' } }]);
+    const recent = await securityStore.recent(20);
+    expect(recent.find((e) => e.ip === ip)).toMatchObject({ type: 'test.event', status: 200, details: { login: 'x', noteId: 'y' } });
+
+    await securityStore.upsert({ ip, until: new Date(Date.now() + 60_000), reason: 'test', createdAt: new Date() });
+    await securityStore.upsert({ ip, until: new Date(Date.now() + 120_000), reason: 'test 2', createdAt: new Date() });
+    expect((await securityStore.listActive(new Date())).filter((b) => b.ip === ip)).toMatchObject([{ reason: 'test 2' }]);
+    await securityStore.remove(ip);
+    expect((await securityStore.listActive(new Date())).some((b) => b.ip === ip)).toBe(false);
+
+    const jti = crypto.randomUUID();
+    await securityStore.revoke(jti, new Date(Date.now() - 1000));
+    expect(await securityStore.isRevoked(jti)).toBe(true);
+    expect(await securityStore.purgeExpired(new Date())).toBeGreaterThanOrEqual(1);
+    expect(await securityStore.isRevoked(jti)).toBe(false);
+    await sql`delete from security_events where type = 'test.event'`;
   });
 });

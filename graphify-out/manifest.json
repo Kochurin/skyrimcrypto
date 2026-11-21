@@ -6,15 +6,15 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1795219521.9866247,
-    "seen": 1795219897.489414,
-    "ast_hash": "b51e244eb74b337f5859990c4be6a44b",
+    "mtime": 1795246305.18819,
+    "seen": 1795246524.5755131,
+    "ast_hash": "a8854a5f8cf46a43d6bd12e7f229656d",
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1795220608.5381649,
-    "seen": 1795221924.7067146,
-    "ast_hash": "83be9a557fcc9a8ba3a32413df9b21a4",
+    "mtime": 1795245660.2122164,
+    "seen": 1795246524.5755146,
+    "ast_hash": "b3ad030d89849cad6f155af0a9bdc35c",
     "semantic_hash": ""
   },
   "packages/crypto/package.json": {
@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795236438.008525,
-    "seen": 1795236461.9219403,
-    "ast_hash": "9c88c970356711dc27558c38857409b9",
+    "mtime": 1795246502.8948314,
+    "seen": 1795246524.5755405,
+    "ast_hash": "9050a448da90f4e0abd22541f3607150",
     "semantic_hash": ""
   },
   ".claude/settings.json": {
@@ -138,27 +138,27 @@
     "semantic_hash": ""
   },
   "apps/api/src/app.ts": {
-    "mtime": 1795221005.3107767,
-    "seen": 1795221924.7066605,
-    "ast_hash": "fbd65ae11c12905092358d47be169a0a",
+    "mtime": 1795246269.2937036,
+    "seen": 1795246524.5754404,
+    "ast_hash": "b154acb3ae4e9890c285a8d0d03a3f5e",
     "semantic_hash": ""
   },
   "apps/api/src/config.ts": {
-    "mtime": 1795221020.20927,
-    "seen": 1795221924.706664,
-    "ast_hash": "cfbb7cab6dc4ea4b198b6424000306ef",
+    "mtime": 1795246305.189191,
+    "seen": 1795246524.5754442,
+    "ast_hash": "bf31d0803eae5be03aad143e8385fe28",
     "semantic_hash": ""
   },
   "apps/api/src/notes.ts": {
-    "mtime": 1795220980.3487341,
-    "seen": 1795221924.7066658,
-    "ast_hash": "eab884c9756255e54ce9e2aa0c72f56f",
+    "mtime": 1795246059.802682,
+    "seen": 1795246524.5754454,
+    "ast_hash": "d185d7cadfe04f356d77e7b666dca3e0",
     "semantic_hash": ""
   },
   "apps/api/src/server.ts": {
-    "mtime": 1795221020.4847128,
-    "seen": 1795221924.706667,
-    "ast_hash": "65be18c47ec0124b8e3385e4fdb3f809",
+    "mtime": 1795246091.668256,
+    "seen": 1795246524.5754533,
+    "ast_hash": "0aaed1184d61ebc445336bc768257598",
     "semantic_hash": ""
   },
   "apps/api/src/stores/memory.ts": {
@@ -168,9 +168,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/stores/postgres.ts": {
-    "mtime": 1795220932.6368253,
-    "seen": 1795221924.7066696,
-    "ast_hash": "8b6700f3cd07e1b42d30febc6dedc608",
+    "mtime": 1795246010.9746003,
+    "seen": 1795246524.5754561,
+    "ast_hash": "71a915f7b25c4dcee8237ba3c03edd04",
     "semantic_hash": ""
   },
   "apps/api/src/stores/s3.ts": {
@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "apps/api/test-integration/real-stores.test.ts": {
-    "mtime": 1795221089.8742974,
-    "seen": 1795221924.7066736,
-    "ast_hash": "9d3a5a4f09f68d4092fac93eb76f776d",
+    "mtime": 1795246442.5414538,
+    "seen": 1795246524.5754607,
+    "ast_hash": "0d1c6a171f92a6d8dfc2013bb2aa25cc",
     "semantic_hash": ""
   },
   "apps/api/test/notes-api.test.ts": {
@@ -294,15 +294,15 @@
     "semantic_hash": ""
   },
   "apps/web/tsconfig.json": {
-    "mtime": 1795220155.314253,
-    "seen": 1795220457.969643,
-    "ast_hash": "7915efe4d3673a471eaeb0406dd1847e",
+    "mtime": 1795246173.6256354,
+    "seen": 1795246524.5755107,
+    "ast_hash": "dac4e4bf7656dd1562931e84ce65f96e",
     "semantic_hash": ""
   },
   "apps/web/vite.config.ts": {
-    "mtime": 1795220155.3336456,
-    "seen": 1795220457.9696438,
-    "ast_hash": "3e14b68b3b4524e2dc80720ec886d7a4",
+    "mtime": 1795246195.9552271,
+    "seen": 1795246524.5755122,
+    "ast_hash": "cef273faf854ee2d53a529725220b6e3",
     "semantic_hash": ""
   },
   "apps/web/index.html": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "apps/api/test/helpers.ts": {
-    "mtime": 1795221038.1519613,
-    "seen": 1795221924.7066762,
-    "ast_hash": "8bd54d8ba1c0153470799d8f87cafb8b",
+    "mtime": 1795246259.2840438,
+    "seen": 1795246524.5754635,
+    "ast_hash": "4d77f3f15ee0f4a2bcc6efa10883a417",
     "semantic_hash": ""
   },
   "apps/web/src/components/CipherField.tsx": {
@@ -447,6 +447,54 @@
     "mtime": 1795222126.7833378,
     "seen": 1795236461.9219437,
     "ast_hash": "a62211a47e25bbdd0132ccb0d85a5883",
+    "semantic_hash": ""
+  },
+  "apps/api/src/security/audit.ts": {
+    "mtime": 1795245964.5395136,
+    "seen": 1795246524.575447,
+    "ast_hash": "080fd54768e65da4de10d615e2874873",
+    "semantic_hash": ""
+  },
+  "apps/api/src/security/guard.ts": {
+    "mtime": 1795246478.0795135,
+    "seen": 1795246524.5754485,
+    "ast_hash": "8f500cea745b5a5c8e16dae44f7d7894",
+    "semantic_hash": ""
+  },
+  "apps/api/src/security/limiter.ts": {
+    "mtime": 1795245964.4626832,
+    "seen": 1795246524.5754497,
+    "ast_hash": "f2030e129e679b949de166295900a14d",
+    "semantic_hash": ""
+  },
+  "apps/api/src/security/memory.ts": {
+    "mtime": 1795245989.5458364,
+    "seen": 1795246524.575451,
+    "ast_hash": "7ebfbfc16b58f0d717061f85e1c313e6",
+    "semantic_hash": ""
+  },
+  "apps/api/src/security/types.ts": {
+    "mtime": 1795245964.3956773,
+    "seen": 1795246524.5754519,
+    "ast_hash": "1ff6a4dd3d06dbc2bc58f4033b87511f",
+    "semantic_hash": ""
+  },
+  "apps/api/test/security.test.ts": {
+    "mtime": 1795246478.0805147,
+    "seen": 1795246524.575466,
+    "ast_hash": "badb6f7025fc7b9e26e1d975bb4f569e",
+    "semantic_hash": ""
+  },
+  "apps/web/security-headers.ts": {
+    "mtime": 1795246173.3655708,
+    "seen": 1795246524.5754697,
+    "ast_hash": "c709a5bfcd92b7e787b654dfe38ce4f4",
+    "semantic_hash": ""
+  },
+  "scripts/dev.mjs": {
+    "mtime": 1795245722.542086,
+    "seen": 1795246524.575534,
+    "ast_hash": "b865c73f0dd27272e83a6fe52b82b12c",
     "semantic_hash": ""
   },
   "package-lock.json": {

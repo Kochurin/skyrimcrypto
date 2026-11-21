@@ -1,4 +1,12 @@
 import postgres from 'postgres';
+import type {
+  EventDetails,
+  IIpBlockStore,
+  IpBlock,
+  IRevokedTokenStore,
+  ISecurityEventStore,
+  SecurityEvent,
+} from '../security/types.js';
 import {
   LoginTakenError,
   type IMetadataStore,
@@ -49,6 +57,36 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       alter table notes add column deleted_at timestamptz;
       create index notes_owner_idx on notes (owner_id, created_at desc) where deleted_at is null;
       create index notes_deleted_idx on notes (deleted_at) where deleted_at is not null;
+    `,
+  },
+  {
+    // Этап 5: журнал безопасности (FR-13), блокировки IP (FR-12), отозванные токены.
+    id: 3,
+    sql: `
+      create table security_events (
+        id       bigserial   primary key,
+        at       timestamptz not null,
+        type     text        not null,
+        ip       text        not null,
+        user_id  uuid,
+        status   smallint,
+        details  jsonb       not null default '{}'::jsonb
+      );
+      create index security_events_at_idx on security_events (at desc);
+      create index security_events_type_idx on security_events (type, at desc);
+
+      create table ip_blocks (
+        ip          text        primary key,
+        until       timestamptz not null,
+        reason      text        not null,
+        created_at  timestamptz not null default now()
+      );
+
+      create table revoked_tokens (
+        jti         uuid        primary key,
+        expires_at  timestamptz not null
+      );
+      create index revoked_tokens_exp_idx on revoked_tokens (expires_at);
     `,
   },
 ];
@@ -193,7 +231,80 @@ export class PostgresMetadataStore implements IMetadataStore, IUserStore {
     await this.sql`update users set failed_attempts = ${failedAttempts}, locked_until = ${lockedUntil} where id = ${id}`;
   }
 
+  /** Хранилище этапа 5 на том же подключении. */
+  security(): PostgresSecurityStore {
+    return new PostgresSecurityStore(this.sql);
+  }
+
   async close(): Promise<void> {
     await this.sql.end({ timeout: 5 });
+  }
+}
+
+interface EventRow {
+  at: Date;
+  type: string;
+  ip: string;
+  user_id: string | null;
+  status: number | null;
+  details: EventDetails;
+}
+
+/** Журнал безопасности, блокировки IP и отозванные токены (часть K3). */
+export class PostgresSecurityStore implements ISecurityEventStore, IIpBlockStore, IRevokedTokenStore {
+  constructor(private readonly sql: postgres.Sql) {}
+
+  async insertMany(events: SecurityEvent[]): Promise<void> {
+    if (events.length === 0) return;
+    const rows = events.map((e) => ({
+      at: e.at,
+      type: e.type,
+      ip: e.ip,
+      user_id: e.userId,
+      status: e.status,
+      details: this.sql.json(e.details),
+    }));
+    await this.sql`insert into security_events ${this.sql(rows, 'at', 'type', 'ip', 'user_id', 'status', 'details')}`;
+  }
+
+  async recent(limit: number): Promise<SecurityEvent[]> {
+    const rows = await this.sql<EventRow[]>`
+      select at, type, ip, user_id, status, details from security_events order by id desc limit ${limit}`;
+    return rows.map((r) => ({ at: r.at, type: r.type, ip: r.ip, userId: r.user_id, status: r.status, details: r.details }));
+  }
+
+  async purgeBefore(date: Date): Promise<number> {
+    const r = await this.sql`delete from security_events where at < ${date}`;
+    return r.count;
+  }
+
+  async upsert(b: IpBlock): Promise<void> {
+    await this.sql`
+      insert into ip_blocks (ip, until, reason, created_at) values (${b.ip}, ${b.until}, ${b.reason}, ${b.createdAt})
+      on conflict (ip) do update set until = excluded.until, reason = excluded.reason, created_at = excluded.created_at`;
+  }
+
+  async remove(ip: string): Promise<void> {
+    await this.sql`delete from ip_blocks where ip = ${ip}`;
+  }
+
+  async listActive(now: Date): Promise<IpBlock[]> {
+    const rows = await this.sql<{ ip: string; until: Date; reason: string; created_at: Date }[]>`
+      select ip, until, reason, created_at from ip_blocks where until > ${now}`;
+    return rows.map((r) => ({ ip: r.ip, until: r.until, reason: r.reason, createdAt: r.created_at }));
+  }
+
+  async revoke(jti: string, expiresAt: Date): Promise<void> {
+    await this.sql`insert into revoked_tokens (jti, expires_at) values (${jti}, ${expiresAt}) on conflict do nothing`;
+  }
+
+  async isRevoked(jti: string): Promise<boolean> {
+    const rows = await this.sql`select 1 from revoked_tokens where jti = ${jti}`;
+    return rows.length > 0;
+  }
+
+  async purgeExpired(now: Date): Promise<number> {
+    const r = await this.sql`delete from revoked_tokens where expires_at <= ${now}`;
+    return r.count;
   }
 }
