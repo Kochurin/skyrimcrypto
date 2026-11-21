@@ -182,6 +182,13 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
     return reply.code(204).send();
   });
 
+  // Кто открыл порт API в браузере — подсказываем, где сайт
+  app.get('/', async (_req, reply) =>
+    reply
+      .type('text/plain; charset=utf-8')
+      .send(['Это API SkyrimCrypto, а не сайт.', 'Сайт: http://127.0.0.1:5173 (запуск всего проекта: npm run dev или start.bat)', ''].join('\n')),
+  );
+
   app.get('/api/health', async (req, reply) => {
     const result: Record<string, 'ok' | 'down'> = {};
     await Promise.all(
