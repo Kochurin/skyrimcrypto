@@ -1,6 +1,6 @@
 {
   "0": "note.ts",
-  "1": "note.test.ts",
+  "1": "notes.ts",
   "2": "db",
   "3": "package.json",
   "4": "steps",
@@ -9,5 +9,8 @@
   "7": "crypto/package.json",
   "8": "tsconfig.json",
   "9": "Crypto Notepad",
-  "10": "Crypto Notepad"
+  "10": "Crypto Notepad",
+  "11": "PostgresMetadataStore",
+  "12": "server.ts",
+  "13": "api/package.json"
 }

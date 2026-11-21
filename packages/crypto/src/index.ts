@@ -8,4 +8,11 @@ export { CryptoError, isCryptoError, type CryptoErrorCode } from './errors.js';
 export { isSupported } from './subtle.js';
 export { deriveKey, validateNewPassword } from './kdf.js';
 export { encryptNote, decryptNote, type EncryptOptions } from './note.js';
-export { serializePackage, parsePackage, type EncryptedPackage } from './package.js';
+export {
+  serializePackage,
+  parsePackage,
+  decodePackage,
+  type EncryptedPackage,
+  type DecodedPackage,
+} from './package.js';
+export { toBase64Url, fromBase64Url } from './encoding.js';

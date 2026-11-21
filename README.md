@@ -11,18 +11,40 @@
 | Папка | Компонент | Статус |
 |---|---|---|
 | `packages/crypto` | K1.2 Криптомодуль (интерфейс ICrypto) | готов, этап 1 |
-| `apps/api` | K2 Backend-сервер API | этап 2 |
+| `apps/api` | K2 Backend-сервер API (IF2 INotesApi), K2.2 Сервис заметок | готов, этап 2 |
 | `apps/web` | K1.1 Веб-редактор | этап 3 |
-| `docker-compose.yml` | K3 PostgreSQL 17, K4 MinIO (S3, образ `bitnamilegacy/minio`) | работает: `docker compose up -d` |
+| `docker-compose.yml` | K3 PostgreSQL 17, K4 MinIO (S3, образ `bitnamilegacy/minio`) | работает |
 
-## Команды
+## Запуск
 
 ```
-npm install       # зависимости
-npm test          # все тесты
-npm run typecheck # проверка типов
-npm run check     # типы + тесты (то же запускает CI)
+npm install
+docker compose up -d      # PostgreSQL :5432 и MinIO :9000 (консоль :9001), только localhost
+npm run dev:api           # сервер на http://127.0.0.1:8787, миграции применяются сами
 ```
+
+Настройки — переменные окружения (по умолчанию совпадают с `.env.example`; файл `.env` в корне подхватывается автоматически).
+
+## Тесты
+
+```
+npm run check             # типы + модульные тесты (их же запускает CI)
+npm run test:integration  # с настоящими PostgreSQL и MinIO, нужен docker compose up -d
+```
+
+## API (IF2 INotesApi)
+
+| Метод | Путь | Ответ |
+|---|---|---|
+| `POST` | `/api/notes` | тело — зашифрованный пакет v1 → `201 {id, expiresAt}`; `400 INVALID_PACKAGE`; `413 TOO_LARGE` |
+| `GET` | `/api/notes/:id` | `200` пакет v1 или `404 NOT_FOUND` (без уточнения причины) |
+| `GET` | `/api/health` | `200 {status:"ok", db, s3}` или `503 degraded` |
+
+Все ответы с заголовком `Cache-Control: no-store`. Сервер не расшифровывает пакеты: он проверяет только структуру.
+
+Хранение (ЛР7): шифротекст — объект `notes/<id>` в MinIO (D1), заголовок пакета (соль, IV, итерации) — строка таблицы `notes` в PostgreSQL (D2).
+Сохранение атомарное (NFR-05): сначала блоб, затем строка в БД; если запись в БД не удалась, блоб удаляется.
+Срок хранения — 30 дней (`NOTE_TTL_DAYS`). Название заметки на сервер не передаётся: оно должно быть частью зашифрованного текста.
 
 ## Формат зашифрованного пакета (v1)
 
@@ -44,9 +66,9 @@ npm run check     # типы + тесты (то же запускает CI)
 
 0. Каркас — готово
 1. Криптомодуль — готово
-2. Бэкенд: `POST /notes`, `GET /notes/:id`, PostgreSQL + MinIO
+2. Бэкенд: `POST /api/notes`, `GET /api/notes/:id`, `/api/health`, PostgreSQL + MinIO — готово
 3. Фронтенд: сценарии US-01 и US-02 (MVP)
 4. Аккаунты, список заметок, удаление и TTL
 5. Защита: Rate Limiting, журнал без содержимого, HTTPS, CSP
-6. Администрирование: квоты, `/health`, бэкапы, аудит
+6. Администрирование: квоты, бэкапы, сверка блобов, аудит
 7. Качество: Playwright в трёх браузерах, нагрузочные тесты, PWA
