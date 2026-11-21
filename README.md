@@ -13,7 +13,7 @@
 | `packages/crypto` | K1.2 Криптомодуль (интерфейс ICrypto) | готов, этап 1 |
 | `apps/api` | K2 Backend-сервер API | этап 2 |
 | `apps/web` | K1.1 Веб-редактор | этап 3 |
-| `docker-compose.yml` | K3 PostgreSQL, K4 MinIO (S3) | файл готов, нужен Docker Desktop |
+| `docker-compose.yml` | K3 PostgreSQL 17, K4 MinIO (S3, образ `bitnamilegacy/minio`) | работает: `docker compose up -d` |
 
 ## Команды
 
