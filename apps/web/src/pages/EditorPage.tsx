@@ -87,8 +87,12 @@ export function EditorPage() {
   }
 
   return (
-    <form className="card editor" onSubmit={onSubmit} noValidate>
-      <h1>Новая заметка</h1>
+    <>
+    <section className="hero">
+      <h1>Заметка, которую прочитает только адресат.</h1>
+      <p>Текст шифруется прямо в браузере. Сервер хранит шифротекст и не знает ни пароля, ни содержимого.</p>
+    </section>
+    <form className="card composer" onSubmit={onSubmit} noValidate>
       {!supported && (
         <Alert kind="warning">
           Браузер не поддерживает Web Crypto API, поэтому шифрование недоступно. Писать можно, но сохранить заметку не
@@ -97,24 +101,25 @@ export function EditorPage() {
       )}
 
       <div className="field">
-        <label htmlFor="note-title">Название</label>
+        <label htmlFor="note-title" className="sr-only">Название</label>
         <input
           id="note-title"
+          className="title-input"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Без названия"
+          placeholder="Название"
           maxLength={200}
           disabled={working}
         />
       </div>
 
       <div className="field grow">
-        <label htmlFor="note-text">Текст</label>
+        <label htmlFor="note-text" className="sr-only">Текст</label>
         <textarea
           id="note-text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Текст шифруется на этом устройстве. Сервер получит только шифротекст."
+          placeholder="Пароль от Wi-Fi в офисе, доступы к хостингу, личные записи…"
           disabled={working}
         />
         <div className={tooLarge ? 'hint hint-error' : 'hint'}>
@@ -130,12 +135,18 @@ export function EditorPage() {
 
       {error && <Alert kind="error">{error}</Alert>}
 
-      <div className="actions">
+      <div className="actions end">
         <button type="submit" className="primary" disabled={!supported || working || tooLarge}>
           {status.kind === 'working' ? status.step : 'Зашифровать и сохранить'}
         </button>
       </div>
     </form>
+    <ol className="steps">
+      <li><span className="mono">01</span><b>Пишете заметку</b>Текст и название остаются на этом устройстве.</li>
+      <li><span className="mono">02</span><b>Шифруете паролем</b>AES-256-GCM, ключ из пароля через PBKDF2 (600 000 итераций).</li>
+      <li><span className="mono">03</span><b>Отправляете ссылку</b>Ссылку и пароль — разными каналами. Хранится 30 дней.</li>
+    </ol>
+    </>
   );
 }
 
@@ -153,8 +164,9 @@ function SavedView({ url, expiresAt, onNew }: { url: string; expiresAt: string; 
   }
 
   return (
-    <section className="card">
-      <h1>Заметка зашифрована и сохранена</h1>
+    <section className="card narrow">
+      <span className="chip ok">Сохранено</span>
+      <h1>Заметка зашифрована</h1>
       <Alert kind="success">
         Передайте ссылку и пароль получателю <strong>разными каналами</strong>: по одной ссылке заметку не прочитать.
       </Alert>

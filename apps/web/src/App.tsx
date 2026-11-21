@@ -16,11 +16,17 @@ export function App() {
             navigate('/');
           }}
         >
+          <span className="logo" aria-hidden="true">CN</span>
           Crypto Notepad
         </a>
-        <span className="badge" title="Шифрование AES-256-GCM в браузере; сервер хранит только шифротекст">
+        <span className="chip" title="Шифрование AES-256-GCM в браузере; сервер хранит только шифротекст">
           Zero-Knowledge
         </span>
+        {route.page !== 'editor' && (
+          <button type="button" className="primary small push" onClick={() => navigate('/')}>
+            Новая заметка
+          </button>
+        )}
       </header>
       <main>
         {route.page === 'editor' && <EditorPage />}
@@ -34,7 +40,7 @@ export function App() {
           </section>
         )}
       </main>
-      <footer className="footer">PBKDF2-SHA-256 · AES-256-GCM · Web Crypto API</footer>
+      <footer className="footer mono">PBKDF2-SHA-256 · AES-256-GCM · Web Crypto API</footer>
     </div>
   );
 }

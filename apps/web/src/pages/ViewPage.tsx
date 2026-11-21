@@ -95,7 +95,7 @@ function Unlock({ pkg }: { pkg: unknown }) {
 
   if (note) {
     return (
-      <article className="card">
+      <article className="card reader">
         <h1 className="note-title">{note.title || 'Без названия'}</h1>
         {/* Текст выводится только как текстовый узел: React экранирует всё, HTML не исполняется. */}
         <div className="note-text">{note.text}</div>
@@ -111,7 +111,8 @@ function Unlock({ pkg }: { pkg: unknown }) {
 
   return (
     <form className="card narrow" onSubmit={onSubmit} noValidate>
-      <h1>Зашифрованная заметка</h1>
+      <span className="chip">Зашифровано</span>
+      <h1>Вам передали заметку</h1>
       <p className="muted">Расшифровка происходит в этом браузере. Пароль на сервер не отправляется.</p>
       {!supported ? (
         <Alert kind="warning">Браузер не поддерживает Web Crypto API, расшифровать заметку здесь нельзя.</Alert>
