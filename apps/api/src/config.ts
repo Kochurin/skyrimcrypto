@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -16,8 +17,15 @@ export interface Config {
     accessKeyId: string;
     secretAccessKey: string;
   };
-  /** Срок хранения заметки (TTL), дней. */
+  /** Срок хранения заметки по умолчанию (TTL), дней. */
   noteTtlDays: number;
+  /** Секрет подписи JWT. Если не задан — случайный на время работы процесса. */
+  jwtSecret: string;
+  jwtSecretGenerated: boolean;
+  /** Cookie сессии только по HTTPS. */
+  cookieSecure: boolean;
+  /** Как часто удалять просроченные и помеченные заметки (FR-09), минут. */
+  purgeIntervalMinutes: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -33,5 +41,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       secretAccessKey: env.S3_SECRET_KEY ?? env.MINIO_ROOT_PASSWORD ?? 'change-me-local-minio',
     },
     noteTtlDays: Number(env.NOTE_TTL_DAYS ?? 30),
+    jwtSecret: env.JWT_SECRET || randomBytes(32).toString('base64url'),
+    jwtSecretGenerated: !env.JWT_SECRET,
+    cookieSecure: env.COOKIE_SECURE === 'true',
+    purgeIntervalMinutes: Number(env.PURGE_INTERVAL_MINUTES ?? 60),
   };
 }

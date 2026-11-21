@@ -11,6 +11,9 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1174.0",
     "@cn/crypto": "*",
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/jwt": "^10.2.8",
+    "@node-rs/argon2": "^2.2.2",
     "fastify": "^5.12.8",
     "postgres": "^3.4.9"
   }

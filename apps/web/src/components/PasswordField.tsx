@@ -4,7 +4,7 @@ interface Props {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  autoComplete: 'new-password' | 'off';
+  autoComplete: 'new-password' | 'current-password' | 'off';
   disabled?: boolean;
   autoFocus?: boolean;
 }

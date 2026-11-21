@@ -23,8 +23,10 @@ export function errorMessage(e: unknown): string {
         return 'Нет связи с сервером. Текст остался в редакторе — попробуйте ещё раз.';
       case 'TOO_LARGE':
         return 'Сервер не принял заметку: она больше 10 МБ.';
+      case 'UNAUTHORIZED':
+        return 'Сессия истекла. Войдите в учётную запись ещё раз.';
       case 'REJECTED':
-        return `Сервер не принял заметку: ${e.message}`;
+        return e.message || 'Сервер отклонил запрос.';
       case 'SERVER':
         return 'Ошибка на сервере. Попробуйте позже.';
     }

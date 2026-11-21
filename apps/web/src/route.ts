@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 
-export type Route = { page: 'editor' } | { page: 'view'; id: string } | { page: 'not-found' };
+export type Route =
+  | { page: 'editor' }
+  | { page: 'login' }
+  | { page: 'notes' }
+  | { page: 'view'; id: string }
+  | { page: 'not-found' };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function parseRoute(pathname: string): Route {
   if (pathname === '/' || pathname === '') return { page: 'editor' };
+  if (pathname === '/login') return { page: 'login' };
+  if (pathname === '/notes') return { page: 'notes' };
   const m = /^\/n\/([^/]+)\/?$/.exec(pathname);
   if (m?.[1] && UUID.test(m[1])) return { page: 'view', id: m[1].toLowerCase() };
   return { page: 'not-found' };

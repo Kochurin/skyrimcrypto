@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { encryptNote, isSupported, MAX_PLAINTEXT_BYTES, validateNewPassword } from '@cn/crypto';
-import { createNote } from '../api.js';
+import { createNote, TTL_OPTIONS, type TtlDays } from '../api.js';
 import { formatBytes, serializeDocument, utf8Length } from '../document.js';
 import { errorMessage } from '../messages.js';
-import { noteUrl } from '../route.js';
+import { navigate, noteUrl } from '../route.js';
+import { useSession } from '../session.js';
 import { Alert } from '../components/Alert.js';
 import { PasswordField } from '../components/PasswordField.js';
 
 type Status =
   | { kind: 'editing' }
   | { kind: 'working'; step: string }
-  | { kind: 'saved'; url: string; expiresAt: string };
+  | { kind: 'saved'; url: string; expiresAt: string; owned: boolean };
 
 /**
  * US-01 «Создать и зашифровать заметку»:
@@ -22,7 +23,9 @@ export function EditorPage() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'editing' });
+  const [ttl, setTtl] = useState<TtlDays>(30);
   const [error, setError] = useState<string | null>(null);
+  const { account } = useSession();
   const supported = isSupported();
 
   // Лимит проверяется по тому, что реально шифруется (с обёрткой документа),
@@ -61,11 +64,11 @@ export function EditorPage() {
       setStatus({ kind: 'working', step: 'Шифрование в браузере…' });
       const pkg = await encryptNote(serializeDocument({ title, text }), password);
       setStatus({ kind: 'working', step: 'Отправка шифротекста…' });
-      const created = await createNote(pkg);
+      const created = await createNote(pkg, ttl);
       // Пароль больше не нужен — убираем его из состояния страницы.
       setPassword('');
       setConfirm('');
-      setStatus({ kind: 'saved', url: noteUrl(created.id), expiresAt: created.expiresAt });
+      setStatus({ kind: 'saved', url: noteUrl(created.id), expiresAt: created.expiresAt, owned: created.owned });
     } catch (err) {
       // Текст и пароль остаются в форме: можно повторить попытку.
       setStatus({ kind: 'editing' });
@@ -83,7 +86,7 @@ export function EditorPage() {
   }
 
   if (status.kind === 'saved') {
-    return <SavedView url={status.url} expiresAt={status.expiresAt} onNew={startNew} />;
+    return <SavedView url={status.url} expiresAt={status.expiresAt} owned={status.owned} onNew={startNew} />;
   }
 
   return (
@@ -135,22 +138,36 @@ export function EditorPage() {
 
       {error && <Alert kind="error">{error}</Alert>}
 
-      <div className="actions end">
+      <div className="actions between">
+        <fieldset className="segmented" disabled={working}>
+          <legend>Хранить</legend>
+          {TTL_OPTIONS.map((days) => (
+            <label key={days} className={ttl === days ? 'checked' : ''}>
+              <input type="radio" name="ttl" value={days} checked={ttl === days} onChange={() => setTtl(days)} />
+              {days === 1 ? '1 день' : `${days} дней`}
+            </label>
+          ))}
+        </fieldset>
         <button type="submit" className="primary" disabled={!supported || working || tooLarge}>
           {status.kind === 'working' ? status.step : 'Зашифровать и сохранить'}
         </button>
       </div>
+      <p className="hint">
+        {account
+          ? `Вы вошли как ${account.login}: заметка появится в «Моих заметках», её можно будет удалить.`
+          : 'Без входа заметку нельзя удалить вручную — она удалится сама по истечении срока.'}
+      </p>
     </form>
     <ol className="steps">
       <li><span className="mono">01</span><b>Пишете заметку</b>Текст и название остаются на этом устройстве.</li>
       <li><span className="mono">02</span><b>Шифруете паролем</b>AES-256-GCM, ключ из пароля через PBKDF2 (600 000 итераций).</li>
-      <li><span className="mono">03</span><b>Отправляете ссылку</b>Ссылку и пароль — разными каналами. Хранится 30 дней.</li>
+      <li><span className="mono">03</span><b>Отправляете ссылку</b>Ссылку и пароль — разными каналами. Хранится от 1 до 30 дней.</li>
     </ol>
     </>
   );
 }
 
-function SavedView({ url, expiresAt, onNew }: { url: string; expiresAt: string; onNew: () => void }) {
+function SavedView({ url, expiresAt, owned, onNew }: { url: string; expiresAt: string; owned: boolean; onNew: () => void }) {
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -186,6 +203,11 @@ function SavedView({ url, expiresAt, onNew }: { url: string; expiresAt: string; 
         <button type="button" onClick={onNew}>
           Новая заметка
         </button>
+        {owned && (
+          <button type="button" onClick={() => navigate('/notes')}>
+            Мои заметки
+          </button>
+        )}
       </div>
     </section>
   );

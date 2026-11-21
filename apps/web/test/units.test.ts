@@ -51,9 +51,9 @@ describe('Клиент IF2 INotesApi', () => {
     const fetchMock = vi.fn(async () => json(201, { id: 'abc', expiresAt: '2026-12-21T00:00:00.000Z' }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createNote(pkg)).resolves.toEqual({ id: 'abc', expiresAt: '2026-12-21T00:00:00.000Z' });
+    await expect(createNote(pkg, 7)).resolves.toEqual({ id: 'abc', expiresAt: '2026-12-21T00:00:00.000Z', owned: false });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('/api/notes');
+    expect(url).toBe('/api/notes?ttl=7');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual(pkg);
     expect(init.body).not.toContain('секрет');

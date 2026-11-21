@@ -1,32 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { decryptNote, encryptNote, fromBase64Url, toBase64Url, type EncryptedPackage } from '@cn/crypto';
-import { buildApp } from '../src/app.js';
-import { NotesService } from '../src/notes.js';
 import { MemoryBlobStore, MemoryMetadataStore } from '../src/stores/memory.js';
+import { setup, type App } from './helpers.js';
 
 const PASSWORD = 'correct horse battery staple';
 const FAST = { iterations: 100_000 };
 
-function setup(opts: { now?: () => Date; metadata?: MemoryMetadataStore; blobs?: MemoryBlobStore } = {}) {
-  const metadata = opts.metadata ?? new MemoryMetadataStore();
-  const blobs = opts.blobs ?? new MemoryBlobStore();
-  const errors: { obj: object; msg: string }[] = [];
-  const notes = new NotesService(metadata, blobs, {
-    ttlDays: 30,
-    log: { error: (obj, msg) => errors.push({ obj, msg }) },
-    ...(opts.now ? { now: opts.now } : {}),
-  });
-  const app = buildApp({ notes, checks: { db: () => metadata.ping(), s3: () => blobs.ping() } });
-  apps.push(app);
-  return { app, metadata, blobs, errors };
-}
-
-const apps: ReturnType<typeof buildApp>[] = [];
-afterEach(async () => {
-  await Promise.all(apps.splice(0).map((a) => a.close()));
-});
-
-async function post(app: ReturnType<typeof buildApp>, body: unknown) {
+async function post(app: App, body: unknown) {
   return app.inject({ method: 'POST', url: '/api/notes', payload: body as object });
 }
 

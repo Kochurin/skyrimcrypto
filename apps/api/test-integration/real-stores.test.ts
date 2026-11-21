@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import postgres from 'postgres';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { decryptNote, encryptNote, type EncryptedPackage } from '@cn/crypto';
-import { buildApp } from '../src/app.js';
+import { buildApp, SESSION_COOKIE } from '../src/app.js';
+import { AuthService } from '../src/auth.js';
 import { loadConfig } from '../src/config.js';
 import { NotesService } from '../src/notes.js';
 import { PostgresMetadataStore } from '../src/stores/postgres.js';
@@ -23,11 +24,15 @@ const s3 = new S3Client({
   forcePathStyle: true,
   credentials: { accessKeyId: config.s3.accessKeyId, secretAccessKey: config.s3.secretAccessKey },
 });
+const service = new NotesService(metadata, blobs, { ttlDays: 30, log: { error: () => {} } });
 const app = buildApp({
-  notes: new NotesService(metadata, blobs, { ttlDays: 30, log: { error: () => {} } }),
+  notes: service,
+  auth: new AuthService(metadata),
   checks: { db: () => metadata.ping(), s3: () => blobs.ping() },
+  jwtSecret: 'integration-test-secret',
 });
 const created: string[] = [];
+const logins: string[] = [];
 
 beforeAll(async () => {
   await metadata.migrate();
@@ -38,6 +43,7 @@ afterAll(async () => {
     await sql`delete from notes where id = ${id}`;
     await blobs.delete(id);
   }
+  for (const login of logins) await sql`delete from users where login = ${login}`;
   await app.close();
   await metadata.close();
   await sql.end();
@@ -99,6 +105,10 @@ describe('Интеграция: PostgreSQL 17 + MinIO', () => {
                   values (gen_random_uuid(), 1, 'x', 1, 'x', 'x', 'x', 16, now())`;
       },
       findActive: metadata.findActive.bind(metadata),
+      listByOwner: metadata.listByOwner.bind(metadata),
+      markDeleted: metadata.markDeleted.bind(metadata),
+      listPurgeable: metadata.listPurgeable.bind(metadata),
+      remove: metadata.remove.bind(metadata),
       ping: metadata.ping.bind(metadata),
     };
     const service = new NotesService(brokenDb, spyBlobs, { ttlDays: 30, log: { error: () => {} } });
@@ -106,5 +116,47 @@ describe('Интеграция: PostgreSQL 17 + MinIO', () => {
     await expect(service.create(await encryptNote('x', PASSWORD, { iterations: 100_000 }))).rejects.toThrow(/kdf_iterations/);
     expect(writtenId).not.toBe('');
     expect(await blobs.get(writtenId)).toBeNull();
+  });
+
+  it('учётная запись в PostgreSQL: регистрация, вход, список, удаление владельцем (FR-01, 06, 09)', async () => {
+    const login = `it-${Date.now().toString(36)}`;
+    logins.push(login);
+    const reg = await app.inject({ method: 'POST', url: '/api/auth/register', payload: { login, password: 'integration-pass-1' } });
+    expect(reg.statusCode).toBe(201);
+    const dup = await app.inject({ method: 'POST', url: '/api/auth/register', payload: { login, password: 'integration-pass-1' } });
+    expect(dup.statusCode).toBe(409);
+
+    const res = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { login, password: 'integration-pass-1' } });
+    const c = res.cookies.find((x) => x.name === SESSION_COOKIE)!;
+    const cookie = `${SESSION_COOKIE}=${c.value}`;
+
+    const [user] = await sql`select password_hash, role from users where login = ${login}`;
+    expect(user).toMatchObject({ role: 'author' });
+    expect(String(user!.password_hash)).toMatch(/^\$argon2id\$/);
+
+    const note = await app.inject({
+      method: 'POST', url: '/api/notes?ttl=7', headers: { cookie },
+      payload: await encryptNote('x', PASSWORD, { iterations: 100_000 }),
+    });
+    const { id } = note.json<{ id: string }>();
+    created.push(id);
+
+    const list = await app.inject({ url: '/api/notes', headers: { cookie } });
+    expect(list.json<{ notes: { id: string }[] }>().notes.map((n) => n.id)).toEqual([id]);
+
+    expect((await app.inject({ method: 'DELETE', url: `/api/notes/${id}`, headers: { cookie } })).statusCode).toBe(204);
+    expect((await app.inject({ url: `/api/notes/${id}` })).statusCode).toBe(404);
+    expect(await sql`select 1 from notes where id = ${id}`).toHaveLength(0);
+    expect(await blobs.get(id)).toBeNull();
+  });
+
+  it('очистка удаляет просроченную заметку из PostgreSQL и MinIO', async () => {
+    const res = await app.inject({ method: 'POST', url: '/api/notes?ttl=1', payload: await encryptNote('x', PASSWORD, { iterations: 100_000 }) });
+    const { id } = res.json<{ id: string }>();
+    created.push(id);
+    await sql`update notes set expires_at = now() - interval '1 second' where id = ${id}`;
+    expect(await service.purge()).toBeGreaterThanOrEqual(1);
+    expect(await sql`select 1 from notes where id = ${id}`).toHaveLength(0);
+    expect(await blobs.get(id)).toBeNull();
   });
 });
