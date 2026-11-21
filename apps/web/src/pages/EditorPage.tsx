@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion, useAnimationControls } from 'motion/react';
 import { encryptNote, isSupported, MAX_PLAINTEXT_BYTES, validateNewPassword } from '@cn/crypto';
 import { createNote, TTL_OPTIONS, type TtlDays } from '../api.js';
@@ -15,11 +15,20 @@ import { LockIcon } from '../components/LockIcon.js';
 import { PasswordField } from '../components/PasswordField.js';
 import { Scramble } from '../components/Scramble.js';
 import { StrengthMeter } from '../components/StrengthMeter.js';
+import { ServerView } from '../components/ServerView.js';
+import { HowItWorks } from '../components/HowItWorks.js';
+import { playLockClick } from '../motion/theme.js';
 
 type Status =
   | { kind: 'editing' }
   | { kind: 'working'; step: string }
-  | { kind: 'saved'; url: string; expiresAt: string; owned: boolean };
+  | { kind: 'saved'; url: string; expiresAt: string; owned: boolean; from: Rect | null };
+
+interface Rect {
+  x: number;
+  y: number;
+  size: number;
+}
 
 /** Сколько символов показываем в «церемонии» шифрования. */
 const PREVIEW_CHARS = 700;
@@ -45,6 +54,8 @@ export function EditorPage() {
   const supported = isSupported();
   const formControls = useAnimationControls();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLButtonElement>(null);
+  const [showServer, setShowServer] = useState(true);
 
   // Появление формы и «вздрагивание» при ошибке (без перемонтирования: фокус не теряется)
   useEffect(() => {
@@ -103,8 +114,11 @@ export function EditorPage() {
       setPassword('');
       setConfirm('');
       setPreview(null);
-      setStatus({ kind: 'saved', url: noteUrl(created.id), expiresAt: created.expiresAt, owned: created.owned });
-      window.scrollTo({ top: 0, behavior: animate ? 'smooth' : 'auto' });
+      // Откуда «вылетит» замок: позиция замка на кнопке (после прокрутки наверх)
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      const lock = ctaRef.current?.querySelector('.cta-lock')?.getBoundingClientRect();
+      const from = animate && lock ? { x: lock.left + lock.width / 2, y: lock.top + lock.height / 2, size: lock.width } : null;
+      setStatus({ kind: 'saved', url: noteUrl(created.id), expiresAt: created.expiresAt, owned: created.owned, from });
     } catch (err) {
       // Текст и пароль остаются в форме: можно повторить попытку.
       setPreview(null);
@@ -125,7 +139,7 @@ export function EditorPage() {
   return (
     <AnimatePresence mode="wait" initial={false}>
       {status.kind === 'saved' ? (
-        <SavedView key="saved" url={status.url} expiresAt={status.expiresAt} owned={status.owned} onNew={startNew} />
+        <SavedView key="saved" url={status.url} expiresAt={status.expiresAt} owned={status.owned} from={status.from} onNew={startNew} />
       ) : (
         <motion.div key="editor" className="stack" exit={{ opacity: 0, y: -16, scale: 0.98, transition: { duration: 0.25 } }}>
           <section className="hero">
@@ -169,6 +183,7 @@ export function EditorPage() {
               />
             </div>
 
+            <div className={showServer ? 'split on' : 'split'}>
             <div className="field grow sheet" ref={sheetRef}>
               <label htmlFor="note-text" className="sr-only">
                 Текст
@@ -195,9 +210,33 @@ export function EditorPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className={tooLarge ? 'hint hint-error' : 'hint'}>
-                {formatBytes(bytes)} из {formatBytes(MAX_PLAINTEXT_BYTES)}
+              <div className="sheet-foot">
+                <span className={tooLarge ? 'hint hint-error' : 'hint'}>
+                  {formatBytes(bytes)} из {formatBytes(MAX_PLAINTEXT_BYTES)}
+                </span>
+                <label className="switch">
+                  <input type="checkbox" checked={showServer} onChange={(e) => setShowServer(e.target.checked)} />
+                  <span className="switch-track" aria-hidden="true">
+                    <motion.span className="switch-thumb" layout transition={SPRING} />
+                  </span>
+                  Что видит сервер
+                </label>
               </div>
+            </div>
+            <AnimatePresence initial={false}>
+              {showServer && (
+                <motion.div
+                  key="server"
+                  className="split-side"
+                  initial={{ opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 24, transition: { duration: 0.15 } }}
+                  transition={SPRING}
+                >
+                  <ServerView title={title} text={text} password={password} />
+                </motion.div>
+              )}
+            </AnimatePresence>
             </div>
 
             <div className="row">
@@ -231,7 +270,7 @@ export function EditorPage() {
                   </label>
                 ))}
               </fieldset>
-              <MagneticButton type="submit" className={working ? 'primary cta busy' : 'primary cta'} disabled={!supported || working || tooLarge}>
+              <MagneticButton ref={ctaRef} type="submit" className={working ? 'primary cta busy' : 'primary cta'} disabled={!supported || working || tooLarge}>
                 <LockIcon locked={working} size={18} className="cta-lock" />
                 {status.kind === 'working' ? status.step : 'Зашифровать и сохранить'}
               </MagneticButton>
@@ -261,6 +300,8 @@ export function EditorPage() {
               </motion.li>
             ))}
           </ol>
+
+          <HowItWorks />
         </motion.div>
       )}
     </AnimatePresence>
@@ -294,15 +335,40 @@ function MatchHint({ password, confirm }: { password: string; confirm: string })
   );
 }
 
-function SavedView({ url, expiresAt, owned, onNew }: { url: string; expiresAt: string; owned: boolean; onNew: () => void }) {
+function SavedView({
+  url,
+  expiresAt,
+  owned,
+  from,
+  onNew,
+}: {
+  url: string;
+  expiresAt: string;
+  owned: boolean;
+  from: Rect | null;
+  onNew: () => void;
+}) {
+  const badgeRef = useRef<HTMLDivElement>(null);
+  const [flight, setFlight] = useState<{ x: number; y: number; scale: number } | null>(null);
+
+  // Общий элемент: замок «перелетает» с кнопки «Зашифровать» в карточку (FLIP)
+  useLayoutEffect(() => {
+    const to = badgeRef.current?.getBoundingClientRect();
+    if (!from || !to) return;
+    setFlight({ x: from.x - (to.left + to.width / 2), y: from.y - (to.top + to.height / 2), scale: from.size / to.width });
+  }, [from]);
   const [copied, setCopied] = useState(false);
   const [locked, setLocked] = useState(!motionAllowed());
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setLocked(true), 250); // замок защёлкивается после появления
+    // замок защёлкивается, когда долетел
+    const t = setTimeout(() => {
+      setLocked(true);
+      playLockClick();
+    }, from ? 600 : 250);
     return () => clearTimeout(t);
-  }, []);
+  }, [from]);
 
   async function copy() {
     try {
@@ -321,10 +387,16 @@ function SavedView({ url, expiresAt, owned, onNew }: { url: string; expiresAt: s
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ ...SPRING, opacity: { duration: 0.25 } }}
     >
-      <div className="saved-badge">
+      <motion.div
+        ref={badgeRef}
+        className="saved-badge"
+        initial={false}
+        animate={flight ? { x: [flight.x, 0], y: [flight.y, 0], scale: [flight.scale, 1] } : {}}
+        transition={{ duration: 0.65, ease: EASE_OUT }}
+      >
         <LockIcon locked={locked} size={64} />
-        <GlyphBurst />
-      </div>
+        {locked && <GlyphBurst />}
+      </motion.div>
       <motion.span className="chip ok" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, ...SPRING }}>
         Сохранено
       </motion.span>

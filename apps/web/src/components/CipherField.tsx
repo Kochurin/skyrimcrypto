@@ -27,6 +27,18 @@ export function CipherField() {
     let height = 0;
     const pointer = { x: -9999, y: -9999, tx: -9999, ty: -9999 };
 
+    // Цвета берутся из темы (--glyph, --accent-rgb) и обновляются при её смене
+    const readPalette = () => {
+      const st = getComputedStyle(document.documentElement);
+      return { ink: st.getPropertyValue('--glyph').trim() || '21, 21, 19', accent: st.getPropertyValue('--accent-rgb').trim() || '31, 107, 58' };
+    };
+    let palette = readPalette();
+    const themeObserver = new MutationObserver(() => {
+      palette = readPalette();
+      draw();
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
     const pick = () => CIPHER_GLYPHS[Math.floor(Math.random() * CIPHER_GLYPHS.length)]!;
 
     function resize() {
@@ -62,9 +74,9 @@ export function CipherField() {
           let ch = glyphs[i]!;
           if (near > 0.55) ch = PHRASE[(r * 7 + c) % PHRASE.length]!; // «расшифровано»
           if (near > 0.02) {
-            ctx!.fillStyle = `rgba(31, 107, 58, ${0.12 + near * 0.75})`;
+            ctx!.fillStyle = `rgba(${palette.accent}, ${0.12 + near * 0.75})`;
           } else {
-            ctx!.fillStyle = 'rgba(21, 21, 19, 0.075)';
+            ctx!.fillStyle = `rgba(${palette.ink}, 0.075)`;
           }
           ctx!.fillText(ch, x, y);
         }
@@ -108,6 +120,7 @@ export function CipherField() {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      themeObserver.disconnect();
       window.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerleave', onLeave);
     };

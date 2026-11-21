@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795221919.7627335,
-    "seen": 1795221924.7067387,
-    "ast_hash": "fcc636cbd4df31db81429b2c9566fb38",
+    "mtime": 1795236438.008525,
+    "seen": 1795236461.9219403,
+    "ast_hash": "9c88c970356711dc27558c38857409b9",
     "semantic_hash": ""
   },
   ".claude/settings.json": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/App.tsx": {
-    "mtime": 1795221893.6448407,
-    "seen": 1795221924.7066822,
-    "ast_hash": "6cb04c6007801eecc1deedfd12fae046",
+    "mtime": 1795236395.3531213,
+    "seen": 1795236461.9218721,
+    "ast_hash": "5a609446ce7d6f714a7989b64218d826",
     "semantic_hash": ""
   },
   "apps/web/src/api.ts": {
@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/PasswordField.tsx": {
-    "mtime": 1795221165.2131114,
-    "seen": 1795221924.7066908,
-    "ast_hash": "9af28a1bb4faa3ca847faec0a249d3e6",
+    "mtime": 1795236108.3226237,
+    "seen": 1795236461.921887,
+    "ast_hash": "770eadf38d55c0906eb64650e933765f",
     "semantic_hash": ""
   },
   "apps/web/src/document.ts": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/main.tsx": {
-    "mtime": 1795220511.7459545,
-    "seen": 1795221924.7066953,
-    "ast_hash": "e4cf196130bb103e55c8a0a4bb5cdc03",
+    "mtime": 1795236288.6155555,
+    "seen": 1795236461.9218943,
+    "ast_hash": "daa2397c0fd7528cfeb02f97c105735c",
     "semantic_hash": ""
   },
   "apps/web/src/messages.ts": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/pages/EditorPage.tsx": {
-    "mtime": 1795221851.2266667,
-    "seen": 1795221924.706699,
-    "ast_hash": "f29bbda4d1019773553281e040634ff1",
+    "mtime": 1795236216.392565,
+    "seen": 1795236461.9218998,
+    "ast_hash": "5762fe19435c8d5a108c318618c5f4c8",
     "semantic_hash": ""
   },
   "apps/web/src/pages/ViewPage.tsx": {
@@ -282,9 +282,9 @@
     "semantic_hash": ""
   },
   "apps/web/test/app.test.tsx": {
-    "mtime": 1795221721.816513,
-    "seen": 1795221924.7067068,
-    "ast_hash": "4e3178e56cdc6bd88d980dbb44b3716a",
+    "mtime": 1795236309.7213356,
+    "seen": 1795236461.9219086,
+    "ast_hash": "c03c5b8f724c3b485f7359aedefd3f10",
     "semantic_hash": ""
   },
   "apps/web/test/units.test.ts": {
@@ -336,9 +336,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/CipherField.tsx": {
-    "mtime": 1795221512.4632733,
-    "seen": 1795221924.7066863,
-    "ast_hash": "73736a79afbc065d957214cc71beccf9",
+    "mtime": 1795236234.1207235,
+    "seen": 1795236461.921877,
+    "ast_hash": "d6584bbf3067ef74879e9c6a1932fedc",
     "semantic_hash": ""
   },
   "apps/web/src/components/GlyphBurst.tsx": {
@@ -348,9 +348,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/Interactive.tsx": {
-    "mtime": 1795221512.652769,
-    "seen": 1795221924.7066884,
-    "ast_hash": "70f9ffe0b62496d437f094dbe0066f36",
+    "mtime": 1795236224.506957,
+    "seen": 1795236461.9218817,
+    "ast_hash": "9f1a3599f0fea0e2ddd4d93fd45d7972",
     "semantic_hash": ""
   },
   "apps/web/src/components/LockIcon.tsx": {
@@ -405,6 +405,48 @@
     "mtime": 1795221721.607491,
     "seen": 1795221924.7067077,
     "ast_hash": "0958ae45541ca6e569694fa25dcf3a8f",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/HowItWorks.tsx": {
+    "mtime": 1795236288.5444505,
+    "seen": 1795236461.9218798,
+    "ast_hash": "33722011abff937ab6a8d09cda82e3a4",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/KeyCursor.tsx": {
+    "mtime": 1795222205.3280172,
+    "seen": 1795236461.921883,
+    "ast_hash": "d8751e5737dd973f99e90fb0e249fea1",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/ParticleLock.tsx": {
+    "mtime": 1795236187.243094,
+    "seen": 1795236461.921886,
+    "ast_hash": "e29d4646495f359c2853a7076430abc1",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/ServerView.tsx": {
+    "mtime": 1795236309.72033,
+    "seen": 1795236461.9218893,
+    "ast_hash": "1895ae315a5ceb98e0ed5f276038cab3",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/VpnPromo.tsx": {
+    "mtime": 1795222135.6913538,
+    "seen": 1795236461.9218922,
+    "ast_hash": "7fc82f9d67e9d6766eb9f945cc276174",
+    "semantic_hash": ""
+  },
+  "apps/web/src/motion/theme.ts": {
+    "mtime": 1795222178.8230085,
+    "seen": 1795236461.9218986,
+    "ast_hash": "8f1db3efcae04001e334fe7402da8f16",
+    "semantic_hash": ""
+  },
+  "apps/web/public/skyrimvpn.png": {
+    "mtime": 1795222126.7833378,
+    "seen": 1795236461.9219437,
+    "ast_hash": "a62211a47e25bbdd0132ccb0d85a5883",
     "semantic_hash": ""
   },
   "package-lock.json": {

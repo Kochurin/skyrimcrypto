@@ -6,6 +6,10 @@ import { NotesPage } from './pages/NotesPage.js';
 import { ViewPage } from './pages/ViewPage.js';
 import { navigate, useRoute, type Route } from './route.js';
 import { SessionProvider, useSession } from './session.js';
+import { useState } from 'react';
+import { setSoundEnabled, soundEnabled, useTheme } from './motion/theme.js';
+import { KeyCursor } from './components/KeyCursor.js';
+import { VpnPromo } from './components/VpnPromo.js';
 
 /** K1.1 Веб-редактор: создание (US-01), чтение по ссылке (US-02), учётная запись и список (FR-01, FR-06). */
 export function App() {
@@ -46,7 +50,11 @@ function Shell() {
         )}
         </motion.main>
       </AnimatePresence>
-      <footer className="footer mono">PBKDF2-SHA-256 · AES-256-GCM · Web Crypto API</footer>
+      <div className="promo-wrap">
+        <VpnPromo />
+      </div>
+      <Footer />
+      <KeyCursor />
     </div>
   );
 }
@@ -65,6 +73,71 @@ function NavLink({ to, current, children }: { to: string; current: boolean; chil
       {current && <motion.span layoutId="nav-pill" className="pill-bg" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
       <span className="pill-text">{children}</span>
     </a>
+  );
+}
+
+function Footer() {
+  const [sound, setSound] = useState(soundEnabled);
+  return (
+    <footer className="footer">
+      <span className="mono">PBKDF2-SHA-256 · AES-256-GCM · Web Crypto API</span>
+      <label className="sound-toggle">
+        <input
+          type="checkbox"
+          checked={sound}
+          onChange={(e) => {
+            setSound(e.target.checked);
+            setSoundEnabled(e.target.checked);
+          }}
+        />
+        Звук замка
+      </label>
+    </footer>
+  );
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  const dark = theme === 'dark';
+  return (
+    <button
+      type="button"
+      className="theme-toggle"
+      aria-label={dark ? 'Светлая тема' : 'Тёмная тема'}
+      title={dark ? 'Светлая тема' : 'Тёмная тема'}
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        toggle({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      }}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.svg
+          key={theme}
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ rotate: -90, scale: 0.4, opacity: 0 }}
+          animate={{ rotate: 0, scale: 1, opacity: 1 }}
+          exit={{ rotate: 90, scale: 0.4, opacity: 0, transition: { duration: 0.12 } }}
+          transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+        >
+          {dark ? (
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" />
+          ) : (
+            <>
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </>
+          )}
+        </motion.svg>
+      </AnimatePresence>
+    </button>
   );
 }
 
@@ -96,6 +169,7 @@ function Header({ route }: { route: Route }) {
           </NavLink>
         )}
       </nav>
+      <ThemeToggle />
       {!loading &&
         (account ? (
           <div className="account">

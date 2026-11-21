@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useSpring } from 'motion/react';
-import type { ComponentPropsWithoutRef, PointerEvent, ReactNode } from 'react';
+import type { ComponentPropsWithRef, PointerEvent, ReactNode } from 'react';
 import { motionAllowed } from '../motion/prefs.js';
 
 /** Записывает позицию курсора в CSS-переменные --mx/--my: по ним рисуется подсветка карточки. */
@@ -14,7 +14,7 @@ export function trackSpotlight(e: PointerEvent<HTMLElement>) {
  * «Магнитная» кнопка: слегка тянется за курсором и пружинит обратно,
  * при нажатии сжимается. Только transform — без перерасчёта раскладки.
  */
-export function MagneticButton({ children, className, disabled, ...rest }: ComponentPropsWithoutRef<'button'> & { children: ReactNode }) {
+export function MagneticButton({ children, className, disabled, ref, ...rest }: ComponentPropsWithRef<'button'> & { children: ReactNode }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const sx = useSpring(x, { stiffness: 300, damping: 20 });
@@ -27,6 +27,7 @@ export function MagneticButton({ children, className, disabled, ...rest }: Compo
   return (
     <motion.button
       {...props}
+      ref={ref}
       disabled={disabled}
       className={className}
       style={{ x: sx, y: sy }}

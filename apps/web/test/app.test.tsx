@@ -121,7 +121,7 @@ describe('US-02: открыть заметку по ссылке', () => {
     await user.click(screen.getByRole('button', { name: 'Расшифровать' }));
     expect(await screen.findByRole('heading', { name: 'Мой план' }, { timeout: 10_000 })).toBeInTheDocument();
     expect(screen.getByText('<img src=x onerror="alert(1)"> строка')).toBeInTheDocument();
-    expect(document.querySelector('img')).toBeNull();
+    expect(document.querySelector('img[src="x"]')).toBeNull(); // подсунутый HTML не стал элементом
   });
 
   it('неверный пароль — сообщение, можно попробовать ещё раз', async () => {
