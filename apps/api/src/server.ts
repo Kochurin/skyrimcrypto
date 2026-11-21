@@ -5,7 +5,10 @@ import { NotesService } from './notes.js';
 import { SecurityLog } from './security/audit.js';
 import { SecurityGuard } from './security/guard.js';
 import { PostgresMetadataStore } from './stores/postgres.js';
-import { S3BlobStore } from './stores/s3.js';
+import { S3BackupStorage, S3BlobStore } from './stores/s3.js';
+import { BackupService } from './admin/backup.js';
+import { reconcile } from './admin/reconcile.js';
+import { SettingsService } from './admin/settings.js';
 
 const config = loadConfig();
 
@@ -13,7 +16,10 @@ const db = PostgresMetadataStore.connect(config.databaseUrl);
 const securityStore = db.security();
 const blobs = S3BlobStore.fromConfig(config.s3);
 const errorLog = { error: (o: object, m: string) => app.log.error(o, m) };
-const notes = new NotesService(db, blobs, { ttlDays: config.noteTtlDays, log: errorLog });
+const settings = new SettingsService(db);
+const notes = new NotesService(db, blobs, { ttlDays: config.noteTtlDays, log: errorLog, quotas: () => settings.quotas() });
+const backupStorage = S3BackupStorage.fromConfig(config.s3, config.backup.bucket);
+const backups = new BackupService(db, blobs, backupStorage, { keep: config.backup.keep, log: errorLog });
 const audit = new SecurityLog(securityStore, errorLog);
 const guard = new SecurityGuard(securityStore, audit, config.guard);
 
@@ -26,6 +32,15 @@ const app = buildApp(
     cookieSecure: config.cookieSecure,
     trustProxy: config.trustProxy,
     security: { guard, audit, revoked: securityStore },
+    admin: {
+      settings,
+      backups,
+      reconcile: () => reconcile(db, blobs),
+      metadata: db,
+      users: db,
+      events: securityStore,
+      reports: securityStore,
+    },
   },
   { level: 'info' },
 );
@@ -50,6 +65,21 @@ async function housekeeping() {
   } catch (err) {
     app.log.error({ err }, 'плановая очистка не удалась');
   }
+  // FR-11 / NFR-07: копия не реже раза в BACKUP_INTERVAL_HOURS (RPO 24 ч); сверка блобов — вместе с ней
+  try {
+    const last = await backups.lastOk();
+    if (!last || Date.now() - last.getTime() >= config.backup.intervalHours * 3_600_000) {
+      const manifest = await backups.create();
+      audit.record({ type: manifest.status === 'ok' ? 'backup.created' : 'backup.failed', ip: 'scheduler', details: { reason: manifest.id } });
+      const report = await reconcile(db, blobs);
+      if (report.orphanBlobs.length || report.missingBlobs.length) {
+        audit.record({ type: 'admin.reconcile', ip: 'scheduler', details: { reason: `сирот ${report.orphanBlobs.length}, потеряно ${report.missingBlobs.length}` } });
+      }
+    }
+  } catch (err) {
+    audit.record({ type: 'backup.failed', ip: 'scheduler', details: { reason: err instanceof Error ? err.message : 'ошибка' } });
+    app.log.error({ err }, 'резервное копирование не удалось');
+  }
 }
 await housekeeping();
 const timer = setInterval(() => void housekeeping(), config.purgeIntervalMinutes * 60_000);
@@ -67,6 +97,7 @@ async function shutdown(signal: string) {
   await audit.flush(); // не терять события журнала при остановке
   await db.close();
   blobs.close();
+  backupStorage.close();
   process.exit(0);
 }
 process.once('SIGINT', () => void shutdown('SIGINT'));

@@ -3,6 +3,8 @@ import { EASE_OUT } from './motion/prefs.js';
 import { EditorPage } from './pages/EditorPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { NotesPage } from './pages/NotesPage.js';
+import { AdminPage } from './pages/AdminPage.js';
+import { AuditPage } from './pages/AuditPage.js';
 import { ViewPage } from './pages/ViewPage.js';
 import { navigate, useRoute, type Route } from './route.js';
 import { SessionProvider, useSession } from './session.js';
@@ -37,6 +39,8 @@ function Shell() {
         {route.page === 'editor' && <EditorPage />}
         {route.page === 'login' && <LoginPage />}
         {route.page === 'notes' && <NotesPage />}
+        {route.page === 'admin' && <AdminPage />}
+        {route.page === 'audit' && <AuditPage />}
         {route.page === 'view' && <ViewPage key={route.id} id={route.id} />}
         {route.page === 'not-found' && (
           <section className="card narrow">
@@ -166,6 +170,16 @@ function Header({ route }: { route: Route }) {
         {account && (
           <NavLink to="/notes" current={route.page === 'notes'}>
             Мои заметки
+          </NavLink>
+        )}
+        {account && (account.role === 'auditor' || account.role === 'admin') && (
+          <NavLink to="/audit" current={route.page === 'audit'}>
+            Аудит
+          </NavLink>
+        )}
+        {account?.role === 'admin' && (
+          <NavLink to="/admin" current={route.page === 'admin'}>
+            Админ
           </NavLink>
         )}
       </nav>

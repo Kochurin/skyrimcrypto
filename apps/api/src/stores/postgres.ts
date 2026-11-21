@@ -1,6 +1,10 @@
 import postgres from 'postgres';
+import type { ISnapshotSource, Snapshot } from '../admin/backup.js';
+import type { ISettingsStore, Quotas } from '../admin/settings.js';
+import type { AuditReport, IAuditReportStore } from '../admin/audit-reports.js';
 import type {
   EventDetails,
+  EventFilter,
   IIpBlockStore,
   IpBlock,
   IRevokedTokenStore,
@@ -89,6 +93,25 @@ const MIGRATIONS: { id: number; sql: string }[] = [
       create index revoked_tokens_exp_idx on revoked_tokens (expires_at);
     `,
   },
+  {
+    // Этап 6: настройки (квоты FR-10) и отчёты аудита Zero-Knowledge (FR-14).
+    id: 4,
+    sql: `
+      create table settings (
+        key    text  primary key,
+        value  jsonb not null
+      );
+      create table audit_reports (
+        id           uuid        primary key,
+        at           timestamptz not null,
+        user_id      uuid        not null references users (id),
+        passed       boolean     not null,
+        duration_ms  integer     not null,
+        checks       jsonb       not null
+      );
+      create index audit_reports_at_idx on audit_reports (at desc);
+    `,
+  },
 ];
 
 interface NoteRow {
@@ -125,7 +148,7 @@ const toUser = (r: UserRow): User => ({
   createdAt: r.created_at,
 });
 
-export class PostgresMetadataStore implements IMetadataStore, IUserStore {
+export class PostgresMetadataStore implements IMetadataStore, IUserStore, ISettingsStore, ISnapshotSource {
   constructor(private readonly sql: postgres.Sql) {}
 
   static connect(url: string): PostgresMetadataStore {
@@ -200,8 +223,79 @@ export class PostgresMetadataStore implements IMetadataStore, IUserStore {
     await this.sql`delete from notes where id = ${id}`;
   }
 
+  async usageByOwner(ownerId: string, now: Date): Promise<number> {
+    const [r] = await this.sql<{ total: string | null }[]>`
+      select sum(size_bytes) as total from notes where owner_id = ${ownerId} and deleted_at is null and expires_at > ${now}`;
+    return Number(r?.total ?? 0);
+  }
+
+  async allIds(): Promise<string[]> {
+    return (await this.sql<{ id: string }[]>`select id from notes`).map((r) => r.id);
+  }
+
+  async stats(now: Date): Promise<{ notes: number; bytes: number; anonymous: number }> {
+    const [r] = await this.sql<{ notes: string; bytes: string | null; anonymous: string }[]>`
+      select count(*) as notes, sum(size_bytes) as bytes, count(*) filter (where owner_id is null) as anonymous
+      from notes where deleted_at is null and expires_at > ${now}`;
+    return { notes: Number(r?.notes ?? 0), bytes: Number(r?.bytes ?? 0), anonymous: Number(r?.anonymous ?? 0) };
+  }
+
   async ping(): Promise<void> {
     await this.sql`select 1`;
+  }
+
+  // ---------- Настройки (FR-10) ----------
+
+  async getQuotas(): Promise<Quotas | null> {
+    const [r] = await this.sql<{ value: Quotas }[]>`select value from settings where key = 'quotas'`;
+    return r?.value ?? null;
+  }
+
+  async setQuotas(q: Quotas): Promise<void> {
+    await this.sql`
+      insert into settings (key, value) values ('quotas', ${this.sql.json(q as never)})
+      on conflict (key) do update set value = excluded.value`;
+  }
+
+  // ---------- Снимок для резервной копии (FR-11) ----------
+
+  async exportSnapshot(): Promise<Snapshot> {
+    // Одна транзакция REPEATABLE READ: заметки и пользователи согласованы между собой
+    return this.sql.begin('isolation level repeatable read', async (tx) => {
+      const notes = await tx`select * from notes`;
+      const users = await tx`select * from users`;
+      const [q] = await tx<{ value: Quotas }[]>`select value from settings where key = 'quotas'`;
+      return JSON.parse(JSON.stringify({ notes: [...notes], users: [...users], quotas: q?.value ?? null })) as Snapshot;
+    });
+  }
+
+  async importSnapshot(s: Snapshot): Promise<void> {
+    await this.sql.begin(async (tx) => {
+      // Отчёты аудита пользователей, которых нет в снимке, удаляются вместе с ними (внешний ключ)
+      await tx`delete from audit_reports where user_id not in (select (u->>'id')::uuid from jsonb_array_elements(${tx.json(s.users as never)}) u)`;
+      await tx`delete from notes`;
+      await tx`delete from users where id not in (select (u->>'id')::uuid from jsonb_array_elements(${tx.json(s.users as never)}) u)`;
+      for (const u of s.users) {
+        await tx`
+          insert into users (id, login, password_hash, role, failed_attempts, locked_until, created_at)
+          values (${String(u.id)}, ${String(u.login)}, ${String(u.password_hash)}, ${String(u.role)},
+                  ${Number(u.failed_attempts)}, ${u.locked_until ? String(u.locked_until) : null}, ${String(u.created_at)})
+          on conflict (id) do update set login = excluded.login, password_hash = excluded.password_hash, role = excluded.role,
+            failed_attempts = excluded.failed_attempts, locked_until = excluded.locked_until, created_at = excluded.created_at`;
+      }
+      for (const n of s.notes) {
+        await tx`
+          insert into notes (id, format_version, kdf_alg, kdf_iterations, salt, cipher_alg, iv, size_bytes, created_at, expires_at, owner_id, deleted_at)
+          values (${String(n.id)}, ${Number(n.format_version)}, ${String(n.kdf_alg)}, ${Number(n.kdf_iterations)}, ${String(n.salt)},
+                  ${String(n.cipher_alg)}, ${String(n.iv)}, ${Number(n.size_bytes)}, ${String(n.created_at)}, ${String(n.expires_at)},
+                  ${n.owner_id ? String(n.owner_id) : null}, ${n.deleted_at ? String(n.deleted_at) : null})`;
+      }
+      if (s.quotas) {
+        await tx`insert into settings (key, value) values ('quotas', ${tx.json(s.quotas as never)}) on conflict (key) do update set value = excluded.value`;
+      } else {
+        await tx`delete from settings where key = 'quotas'`;
+      }
+    });
   }
 
   // ---------- Учётные записи ----------
@@ -231,6 +325,16 @@ export class PostgresMetadataStore implements IMetadataStore, IUserStore {
     await this.sql`update users set failed_attempts = ${failedAttempts}, locked_until = ${lockedUntil} where id = ${id}`;
   }
 
+  async setRole(login: string, role: Role): Promise<boolean> {
+    const r = await this.sql`update users set role = ${role} where login = ${login}`;
+    return r.count > 0;
+  }
+
+  async count(): Promise<number> {
+    const [r] = await this.sql<{ n: string }[]>`select count(*) as n from users`;
+    return Number(r?.n ?? 0);
+  }
+
   /** Хранилище этапа 5 на том же подключении. */
   security(): PostgresSecurityStore {
     return new PostgresSecurityStore(this.sql);
@@ -251,7 +355,7 @@ interface EventRow {
 }
 
 /** Журнал безопасности, блокировки IP и отозванные токены (часть K3). */
-export class PostgresSecurityStore implements ISecurityEventStore, IIpBlockStore, IRevokedTokenStore {
+export class PostgresSecurityStore implements ISecurityEventStore, IIpBlockStore, IRevokedTokenStore, IAuditReportStore {
   constructor(private readonly sql: postgres.Sql) {}
 
   async insertMany(events: SecurityEvent[]): Promise<void> {
@@ -271,6 +375,29 @@ export class PostgresSecurityStore implements ISecurityEventStore, IIpBlockStore
     const rows = await this.sql<EventRow[]>`
       select at, type, ip, user_id, status, details from security_events order by id desc limit ${limit}`;
     return rows.map((r) => ({ at: r.at, type: r.type, ip: r.ip, userId: r.user_id, status: r.status, details: r.details }));
+  }
+
+  async search(f: EventFilter): Promise<SecurityEvent[]> {
+    const typePattern = f.type ? `${f.type.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
+    const rows = await this.sql<EventRow[]>`
+      select at, type, ip, user_id, status, details from security_events
+      where (${typePattern}::text is null or type like ${typePattern})
+        and (${f.ip ?? null}::text is null or ip = ${f.ip ?? null})
+        and (${f.userId ?? null}::uuid is null or user_id = ${f.userId ?? null})
+      order by id desc limit ${f.limit}`;
+    return rows.map((r) => ({ at: r.at, type: r.type, ip: r.ip, userId: r.user_id, status: r.status, details: r.details }));
+  }
+
+  async insert(r: AuditReport): Promise<void> {
+    await this.sql`
+      insert into audit_reports (id, at, user_id, passed, duration_ms, checks)
+      values (${r.id}, ${r.at}, ${r.userId}, ${r.passed}, ${r.durationMs}, ${this.sql.json(r.checks as never)})`;
+  }
+
+  async list(limit: number): Promise<AuditReport[]> {
+    const rows = await this.sql<{ id: string; at: Date; user_id: string; passed: boolean; duration_ms: number; checks: AuditReport['checks'] }[]>`
+      select id, at, user_id, passed, duration_ms, checks from audit_reports order by at desc limit ${limit}`;
+    return rows.map((r) => ({ id: r.id, at: r.at, userId: r.user_id, passed: r.passed, durationMs: r.duration_ms, checks: r.checks }));
   }
 
   async purgeBefore(date: Date): Promise<number> {

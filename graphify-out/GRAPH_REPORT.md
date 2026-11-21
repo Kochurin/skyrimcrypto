@@ -1,17 +1,17 @@
 # Graph Report - crypto-notepad  (2026-11-21)
 
 ## Corpus Check
-- 80 files · ~32,520 words
+- 93 files · ~44,516 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 9 file(s) not represented in the graph (top: (none) 6, .example 1, .css 1)
 
 ## Summary
-- 753 nodes · 1684 edges · 45 communities (41 shown, 4 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 41 edges (avg confidence: 0.85)
+- 946 nodes · 2230 edges · 56 communities (48 shown, 8 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 68 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `55a3c725`
+- Built from commit: `7268e31e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,7 +22,7 @@
 - package.json
 - steps
 - compilerOptions
-- EditorPage.tsx
+- prefs.ts
 - crypto/package.json
 - tsconfig.json
 - Crypto Notepad
@@ -34,7 +34,7 @@
 - PostgresMetadataStore
 - HowItWorks.tsx
 - notes.ts
-- AuthService
+- api.ts
 - app.ts
 - api/test/helpers.ts
 - main.tsx
@@ -45,14 +45,14 @@
 - PostgresSecurityStore
 - SecurityGuard
 - dev.mjs
-- SecurityLog
-- stores/memory.ts
 - server.ts
+- stores/memory.ts
+- BackupService
 - environment
 - config.ts
 - web
-- auth.ts
-- IRevokedTokenStore
+- App.tsx
+- AdminPage.tsx
 - S3BlobStore
 - api
 - minio
@@ -61,18 +61,29 @@
 - healthcheck
 - build
 - scripts
+- EditorPage.tsx
+- admin/memory.ts
+- backup.ts
+- stores/memory.ts
+- ViewPage.tsx
+- IMetadataStore
+- theme.ts
+- S3BackupStorage
+- Snapshot
+- stores/types.ts
+- IBlobStore
 
 ## God Nodes (most connected - your core abstractions)
-1. `motionAllowed()` - 26 edges
-2. `EditorPage()` - 26 edges
-3. `react` - 23 edges
-4. `PostgresMetadataStore` - 21 edges
-5. `SecurityGuard` - 18 edges
-6. `CryptoError` - 17 edges
-7. `errorMessage()` - 17 edges
-8. `Unlock()` - 17 edges
-9. `motion` - 17 edges
-10. `NotesService` - 16 edges
+1. `PostgresMetadataStore` - 33 edges
+2. `errorMessage()` - 30 edges
+3. `motionAllowed()` - 26 edges
+4. `EditorPage()` - 26 edges
+5. `react` - 26 edges
+6. `setup()` - 24 edges
+7. `SecurityGuard` - 21 edges
+8. `ApiError` - 20 edges
+9. `MemoryMetadataStore` - 20 edges
+10. `IMetadataStore` - 20 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `createNote()` --calls--> `encryptNote()`  [EXTRACTED]
@@ -83,21 +94,21 @@
   apps/web/src/pages/ViewPage.tsx → packages/crypto/src/note.ts
 - `Unlock()` --calls--> `isSupported()`  [EXTRACTED]
   apps/web/src/pages/ViewPage.tsx → packages/crypto/src/subtle.ts
-- `errorMessage()` --calls--> `isCryptoError()`  [EXTRACTED]
-  apps/web/src/messages.ts → packages/crypto/src/errors.ts
+- `Unlock()` --calls--> `isCryptoError()`  [EXTRACTED]
+  apps/web/src/pages/ViewPage.tsx → packages/crypto/src/errors.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (45 total, 4 thin omitted)
+## Communities (56 total, 8 thin omitted)
 
 ### Community 0 - "note.ts"
-Cohesion: 0.08
-Nodes (53): FAST, RFC-4648, CIPHER_ALGORITHM, DEFAULT_ITERATIONS, FORMAT_VERSION, IV_BYTES, KDF_ALGORITHM, KEY_BITS (+45 more)
+Cohesion: 0.09
+Nodes (55): FAST, RFC-4648, CIPHER_ALGORITHM, DEFAULT_ITERATIONS, FORMAT_VERSION, IV_BYTES, KDF_ALGORITHM, KEY_BITS (+47 more)
 
 ### Community 1 - "postgres.ts"
-Cohesion: 0.18
-Nodes (7): EventDetails, EventRow, MIGRATIONS, NoteRow, toUser(), LoginTakenError, User
+Cohesion: 0.19
+Nodes (4): MemoryUserStore, toUser(), LoginTakenError, User
 
 ### Community 2 - "db"
 Cohesion: 0.25
@@ -115,9 +126,9 @@ Nodes (13): runs-on, steps, jobs, check, name, on, pull_request, push (+5 more)
 Cohesion: 0.14
 Nodes (13): compilerOptions, exactOptionalPropertyTypes, isolatedModules, lib, module, moduleResolution, noImplicitOverride, noUncheckedIndexedAccess (+5 more)
 
-### Community 6 - "EditorPage.tsx"
-Cohesion: 0.05
-Nodes (100): Account, ApiFailure, ApiFailureCode, CreatedNote, createNote(), deleteNote(), failure(), fetchMe() (+92 more)
+### Community 6 - "prefs.ts"
+Cohesion: 0.17
+Nodes (20): GlyphBurst(), MagneticButton(), trackSpotlight(), KeyCursor(), Props, Props, cipherOf(), Props (+12 more)
 
 ### Community 7 - "crypto/package.json"
 Cohesion: 0.29
@@ -128,24 +139,20 @@ Cohesion: 0.11
 Nodes (15): compilerOptions, types, extends, include, compilerOptions, jsx, lib, types (+7 more)
 
 ### Community 9 - "Crypto Notepad"
-Cohesion: 0.17
-Nodes (11): API (IF2 INotesApi), SkyrimCrypto, Веб-редактор (K1.1), Другие проекты автора, Запуск, Защита (этап 5: FR-12, FR-13, NFR-08, NFR-10, NFR-11, US-05), План, Структура (компоненты из ЛР7) (+3 more)
+Cohesion: 0.15
+Nodes (12): API (IF2 INotesApi), SkyrimCrypto, Администрирование и аудит (этап 6: FR-10, FR-11, FR-12, FR-13, FR-14, US-03, US-04), Веб-редактор (K1.1), Другие проекты автора, Запуск, Защита (этап 5: FR-12, FR-13, NFR-08, NFR-10, NFR-11, US-05), План (+4 more)
 
 ### Community 10 - "Crypto Notepad"
 Cohesion: 0.40
 Nodes (4): graphify, SkyrimCrypto, Правила, Скиллы проекта
 
-### Community 11 - "NotesService"
-Cohesion: 0.17
-Nodes (3): NotesService, IBlobStore, IMetadataStore
-
 ### Community 12 - "real-stores.test.ts"
 Cohesion: 0.14
-Nodes (13): SESSION_COOKIE, app, audit, blobs, config, created, guard, logins (+5 more)
+Nodes (12): app, audit, blobs, config, created, guard, logins, metadata (+4 more)
 
 ### Community 13 - "api/package.json"
-Cohesion: 0.14
-Nodes (18): dependencies, @cn/crypto@*, fastify@^5.12.8, @fastify/cookie@^11.1.5, @fastify/jwt@^10.2.8, @node-rs/argon2@^2.2.2, postgres@^3.4.9, description (+10 more)
+Cohesion: 0.13
+Nodes (20): dependencies, @aws-sdk/client-s3@^3.1174.0, @cn/crypto@*, fastify@^5.12.8, @fastify/cookie@^11.1.5, @fastify/jwt@^10.2.8, @node-rs/argon2@^2.2.2, postgres@^3.4.9 (+12 more)
 
 ### Community 14 - "web/package.json"
 Cohesion: 0.15
@@ -156,20 +163,20 @@ Cohesion: 0.22
 Nodes (13): Block(), CIPHER, HowItWorks(), PLAIN, ScrollStory(), StageProgress(), STAGES, StageVisual() (+5 more)
 
 ### Community 17 - "notes.ts"
-Cohesion: 0.15
-Nodes (5): CreatedNote, CreateOptions, Logger, MAX_CIPHERTEXT_BYTES, TTL_OPTIONS
+Cohesion: 0.13
+Nodes (7): CreatedNote, CreateOptions, Logger, MAX_CIPHERTEXT_BYTES, mb(), QuotaLimits, TTL_OPTIONS
 
-### Community 18 - "AuthService"
-Cohesion: 0.21
-Nodes (3): INVALID(), ApiError, IUserStore
+### Community 18 - "api.ts"
+Cohesion: 0.07
+Nodes (39): Account, ApiFailure, ApiFailureCode, audit, AuditCheck, AuditReportInfo, call(), CreatedNote (+31 more)
 
 ### Community 19 - "app.ts"
-Cohesion: 0.12
-Nodes (18): API_SECURITY_HEADERS, AppDeps, AuditInfo, BODY_LIMIT, buildApp(), optionalUser(), requireUser(), credentialsSchema (+10 more)
+Cohesion: 0.06
+Nodes (37): parseReport(), GRACE_MS, ReconcileReport, AdminDeps, Ctx, registerAdminRoutes(), state, API_SECURITY_HEADERS (+29 more)
 
 ### Community 20 - "api/test/helpers.ts"
-Cohesion: 0.16
-Nodes (13): AUTH_PATHS, DEFAULT_GUARD, GuardOptions, MemoryBlobStore, MemoryUserStore, createNote(), FAST, App (+5 more)
+Cohesion: 0.08
+Nodes (22): DEFAULT_QUOTAS, ISettingsStore, LIMITS, MB, MemorySettingsStore, SettingsService, validateQuotas(), GuardOptions (+14 more)
 
 ### Community 21 - "main.tsx"
 Cohesion: 0.16
@@ -192,40 +199,40 @@ Cohesion: 0.50
 Nodes (4): scripts, build, dev, preview
 
 ### Community 26 - "PostgresSecurityStore"
-Cohesion: 0.11
-Nodes (6): MemoryIpBlockStore, MemorySecurityEventStore, IIpBlockStore, IpBlock, SecurityEvent, PostgresSecurityStore
+Cohesion: 0.08
+Nodes (13): MemoryIpBlockStore, MemorySecurityEventStore, EventDetails, EventFilter, IIpBlockStore, IpBlock, IRevokedTokenStore, ISecurityEventStore (+5 more)
 
 ### Community 28 - "dev.mjs"
 Cohesion: 0.17
 Nodes (11): c(), children, docker, dockerCmd(), fail(), line(), ROOT, run() (+3 more)
 
-### Community 29 - "SecurityLog"
-Cohesion: 0.17
-Nodes (6): ALLOWED_KEYS, AuditLogger, maskDetails(), SecurityLog, ISecurityEventStore, shutdown()
+### Community 29 - "server.ts"
+Cohesion: 0.10
+Nodes (18): ALLOWED_KEYS, AuditLogger, maskDetails(), SecurityLog, AUTH_PATHS, DEFAULT_GUARD, audit, backups (+10 more)
 
-### Community 30 - "stores/memory.ts"
-Cohesion: 0.21
-Nodes (5): MemoryMetadataStore, Row, NoteMetadata, NoteSummary, ROLES
-
-### Community 31 - "server.ts"
-Cohesion: 0.17
-Nodes (12): app, audit, blobs, config, db, errorLog, guard, housekeeping() (+4 more)
+### Community 31 - "BackupService"
+Cohesion: 0.18
+Nodes (5): BackupService, ISnapshotSource, sha256(), housekeeping(), timer
 
 ### Community 32 - "environment"
 Cohesion: 0.17
 Nodes (12): environment, API_HOST, API_PORT, COOKIE_SECURE, DATABASE_URL, JWT_SECRET, NODE_ENV, S3_ACCESS_KEY (+4 more)
 
 ### Community 33 - "config.ts"
-Cohesion: 0.20
-Nodes (5): @aws-sdk/client-s3@^3.1174.0, Config, envFile, loadConfig(), @aws-sdk/client-s3
+Cohesion: 0.21
+Nodes (5): Config, envFile, loadConfig(), listAll(), makeClient()
 
 ### Community 34 - "web"
 Cohesion: 0.20
 Nodes (10): HTTP_PORT, HTTPS_PORT, SITE_ADDRESS, web, depends_on, environment, ports, profiles (+2 more)
 
-### Community 35 - "auth.ts"
-Cohesion: 0.29
-Nodes (7): LOCK_MINUTES, MAX_ACCOUNT_PASSWORD, MAX_FAILED_ATTEMPTS, MIN_ACCOUNT_PASSWORD, SessionUser, UserRow, Role
+### Community 35 - "App.tsx"
+Cohesion: 0.15
+Nodes (25): Header(), NavLink(), Shell(), ThemeToggle(), RoleGate(), readHidden(), VpnPromo(), EASE_OUT (+17 more)
+
+### Community 36 - "AdminPage.tsx"
+Cohesion: 0.15
+Nodes (28): admin, BackupManifest, IpBlockInfo, Overview, ReconcileReport, SecurityEventInfo, Alert(), errorMessage() (+20 more)
 
 ### Community 38 - "api"
 Cohesion: 0.25
@@ -252,28 +259,60 @@ Cohesion: 0.67
 Nodes (4): build, context, target, build
 
 ### Community 44 - "scripts"
-Cohesion: 0.67
-Nodes (3): scripts, dev, start
+Cohesion: 0.50
+Nodes (4): scripts, dev, set-role, start
+
+### Community 45 - "EditorPage.tsx"
+Cohesion: 0.16
+Nodes (16): ServerView(), COLORS, LABELS, passwordScore(), StrengthMeter(), formatBytes(), NoteDocument, serializeDocument() (+8 more)
+
+### Community 46 - "admin/memory.ts"
+Cohesion: 0.21
+Nodes (4): AuditCheck, AuditReport, IAuditReportStore, MemoryAuditReportStore
+
+### Community 47 - "backup.ts"
+Cohesion: 0.16
+Nodes (6): BackupManifest, dec, enc, IBackupStorage, MemoryBackupStorage, RestoreReport
+
+### Community 48 - "stores/memory.ts"
+Cohesion: 0.18
+Nodes (4): MemoryBlobStore, Row, BlobInfo, NoteMetadata
+
+### Community 49 - "ViewPage.tsx"
+Cohesion: 0.28
+Nodes (9): LockIcon(), PasswordField(), parseDocument(), sleep(), Load, NewNoteButton(), Unlock(), onSubmit() (+1 more)
+
+### Community 50 - "IMetadataStore"
+Cohesion: 0.20
+Nodes (3): reconcile(), app, IMetadataStore
+
+### Community 51 - "theme.ts"
+Cohesion: 0.29
+Nodes (9): Footer(), applyTheme(), DocWithVT, initialTheme(), playLockClick(), setSoundEnabled(), soundEnabled(), Theme (+1 more)
+
+### Community 54 - "stores/types.ts"
+Cohesion: 0.50
+Nodes (3): db, [login, role], ROLES
 
 ## Knowledge Gaps
 - **3 isolated node(s):** `RFC-4648`, `RFC-7914`, `RFC-7914`
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 283 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 336 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `vitest` connect `package.json` to `note.ts`, `EditorPage.tsx`, `real-stores.test.ts`, `api/test/helpers.ts`, `accounts.test.tsx`?**
-  _High betweenness centrality (0.111) - this node is a cross-community bridge._
+- **Why does `vitest` connect `api/test/helpers.ts` to `note.ts`, `package.json`, `real-stores.test.ts`, `api.ts`, `accounts.test.tsx`, `server.ts`?**
+  _High betweenness centrality (0.104) - this node is a cross-community bridge._
 - **What connects `RFC-4648`, `RFC-7914`, `RFC-7914` to the rest of the system?**
   _3 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `note.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.0821917808219178 - nodes in this community are weakly interconnected._
-- **Why does `react` connect `EditorPage.tsx` to `HowItWorks.tsx`, `main.tsx`, `web/package.json`?**
-  _High betweenness centrality (0.039) - this node is a cross-community bridge._
+  _Cohesion score 0.08772635814889336 - nodes in this community are weakly interconnected._
+- **Why does `PostgresMetadataStore` connect `PostgresMetadataStore` to `postgres.ts`, `real-stores.test.ts`, `stores/memory.ts`, `IMetadataStore`, `app.ts`, `api/test/helpers.ts`, `Snapshot`, `stores/types.ts`, `PostgresSecurityStore`, `server.ts`, `stores/memory.ts`, `BackupService`?**
+  _High betweenness centrality (0.044) - this node is a cross-community bridge._
 - **Should `package.json` be split into smaller, more focused modules?**
-  _Cohesion score 0.07881773399014778 - nodes in this community are weakly interconnected._
-- **Why does `motion` connect `EditorPage.tsx` to `HowItWorks.tsx`, `main.tsx`, `web/package.json`, `setup-dom.ts`?**
-  _High betweenness centrality (0.039) - this node is a cross-community bridge._
+  _Cohesion score 0.08262108262108261 - nodes in this community are weakly interconnected._
+- **Why does `react` connect `prefs.ts` to `App.tsx`, `AdminPage.tsx`, `EditorPage.tsx`, `web/package.json`, `HowItWorks.tsx`, `ViewPage.tsx`, `api.ts`, `theme.ts`, `main.tsx`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
 - **Should `steps` be split into smaller, more focused modules?**
   _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._

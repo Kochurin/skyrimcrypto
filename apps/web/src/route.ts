@@ -4,6 +4,8 @@ export type Route =
   | { page: 'editor' }
   | { page: 'login' }
   | { page: 'notes' }
+  | { page: 'admin' }
+  | { page: 'audit' }
   | { page: 'view'; id: string }
   | { page: 'not-found' };
 
@@ -13,6 +15,8 @@ export function parseRoute(pathname: string): Route {
   if (pathname === '/' || pathname === '') return { page: 'editor' };
   if (pathname === '/login') return { page: 'login' };
   if (pathname === '/notes') return { page: 'notes' };
+  if (pathname === '/admin') return { page: 'admin' };
+  if (pathname === '/audit') return { page: 'audit' };
   const m = /^\/n\/([^/]+)\/?$/.exec(pathname);
   if (m?.[1] && UUID.test(m[1])) return { page: 'view', id: m[1].toLowerCase() };
   return { page: 'not-found' };

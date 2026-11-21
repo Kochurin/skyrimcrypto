@@ -42,6 +42,8 @@ export interface Config {
   };
   /** Сколько дней хранить журнал безопасности (FR-13, ротация). */
   securityLogDays: number;
+  /** FR-11, NFR-07: бакет копий, как часто делать (RPO 24 ч) и сколько хранить. */
+  backup: { bucket: string; intervalHours: number; keep: number };
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -76,5 +78,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       allowlist: (env.IP_ALLOWLIST ?? '').split(',').map((s) => s.trim()).filter(Boolean),
     },
     securityLogDays: Number(env.SECURITY_LOG_DAYS ?? 180),
+    backup: {
+      bucket: env.BACKUP_BUCKET ?? 'notes-backups',
+      intervalHours: Number(env.BACKUP_INTERVAL_HOURS ?? 24),
+      keep: Number(env.BACKUP_KEEP ?? 7),
+    },
   };
 }

@@ -8,6 +8,8 @@ import { ApiError, MAX_CIPHERTEXT_BYTES, type NotesService } from './notes.js';
 import type { SecurityLog } from './security/audit.js';
 import type { SecurityGuard } from './security/guard.js';
 import type { IRevokedTokenStore } from './security/types.js';
+import { registerAdminRoutes, type AdminDeps } from './admin/routes.js';
+import type { Role } from './stores/types.js';
 
 /**
  * IF2 INotesApi (ЛР7): HTTP API сервера.
@@ -40,6 +42,8 @@ export interface AppDeps {
     audit: SecurityLog;
     revoked: IRevokedTokenStore;
   };
+  /** Этап 6: администрирование и аудит (без него разделов /api/admin и /api/audit нет). */
+  admin?: Omit<AdminDeps, 'checks'>;
 }
 
 interface TokenPayload {
@@ -217,6 +221,13 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
     return user;
   }
 
+  /** Вход обязателен и роль — одна из перечисленных (FR-01: доступ к разделам по роли). */
+  async function requireRole(req: FastifyRequest, roles: Role[]): Promise<SessionUser> {
+    const user = await requireUser(req);
+    if (!roles.includes(user.role)) throw new ApiError(403, 'NO_ROLE', 'Недостаточно прав для этого раздела.');
+    return user;
+  }
+
   async function startSession(reply: FastifyReply, user: SessionUser) {
     // JWT лежит в httpOnly-cookie: скрипты страницы (в том числе при XSS) его не прочитают.
     // SameSite=Strict — cookie не уходит с чужих сайтов (защита от CSRF).
@@ -283,8 +294,9 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
 
   app.get('/api/notes', async (req, reply) => {
     const user = await requireUser(req);
-    const notes = await deps.notes.list(user.id);
+    const [notes, usage] = await Promise.all([deps.notes.list(user.id), deps.notes.usage(user.id)]);
     return reply.send({
+      usage,
       notes: notes.map((n) => ({
         id: n.id,
         sizeBytes: n.sizeBytes,
@@ -316,6 +328,8 @@ export function buildApp(deps: AppDeps, logger: FastifyServerOptions['logger'] =
       .type('text/plain; charset=utf-8')
       .send(['Это API SkyrimCrypto, а не сайт.', 'Сайт: http://127.0.0.1:5173 (запуск всего проекта: npm run dev или start.bat)', ''].join('\n')),
   );
+
+  if (deps.admin) registerAdminRoutes(app, { ...deps.admin, checks: deps.checks }, { requireRole, guard, audit });
 
   app.get('/api/health', async (req, reply) => {
     const result: Record<string, 'ok' | 'down'> = {};

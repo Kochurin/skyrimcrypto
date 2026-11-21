@@ -15,10 +15,20 @@ export interface SecurityEvent {
   details: EventDetails;
 }
 
+export interface EventFilter {
+  /** Тип или префикс типа: 'auth.' — все события входа. */
+  type?: string;
+  ip?: string;
+  userId?: string;
+  limit: number;
+}
+
 export interface ISecurityEventStore {
   insertMany(events: SecurityEvent[]): Promise<void>;
   /** Последние события (для тестов и будущей панели аудитора). */
   recent(limit: number): Promise<SecurityEvent[]>;
+  /** FR-13: поиск и фильтрация — по типу (префиксу), IP, пользователю. */
+  search(filter: EventFilter): Promise<SecurityEvent[]>;
   /** Удалить события старше даты (ротация журнала). Возвращает число удалённых. */
   purgeBefore(date: Date): Promise<number>;
 }

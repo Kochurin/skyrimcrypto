@@ -48,7 +48,20 @@ export interface IMetadataStore {
   listPurgeable(now: Date, limit: number): Promise<string[]>;
   /** Окончательно удалить строку (после удаления блоба). */
   remove(id: string): Promise<void>;
+  /** FR-10: сколько байт занимают активные заметки владельца. */
+  usageByOwner(ownerId: string, now: Date): Promise<number>;
+  /** Сверка (этап 6): id всех строк, включая помеченные к удалению. */
+  allIds(): Promise<string[]>;
+  /** Сводка для администратора. */
+  stats(now: Date): Promise<{ notes: number; bytes: number; anonymous: number }>;
   ping(): Promise<void>;
+}
+
+/** Объект в хранилище блобов (для сверки). */
+export interface BlobInfo {
+  id: string;
+  size: number;
+  lastModified: Date;
 }
 
 /** IF4 IBlobStore (хранилище D1): зашифрованные блобы. */
@@ -58,6 +71,8 @@ export interface IBlobStore {
   get(id: string): Promise<Uint8Array | null>;
   /** Удаление отсутствующего объекта — не ошибка. */
   delete(id: string): Promise<void>;
+  /** Все объекты заметок (сверка блобов с метаданными). */
+  list(): Promise<BlobInfo[]>;
   ping(): Promise<void>;
 }
 
@@ -85,6 +100,9 @@ export interface IUserStore {
   findById(id: string): Promise<User | null>;
   /** Сохранить счётчик неудачных попыток и блокировку. */
   updateLock(id: string, failedAttempts: number, lockedUntil: Date | null): Promise<void>;
+  /** Назначить роль (FR-01: автор, аудитор, администратор). false — нет такого логина. */
+  setRole(login: string, role: Role): Promise<boolean>;
+  count(): Promise<number>;
 }
 
 export class LoginTakenError extends Error {

@@ -9,7 +9,9 @@ import { DEFAULT_GUARD, SecurityGuard } from '../src/security/guard.js';
 import { loadConfig } from '../src/config.js';
 import { NotesService } from '../src/notes.js';
 import { PostgresMetadataStore } from '../src/stores/postgres.js';
-import { S3BlobStore } from '../src/stores/s3.js';
+import { S3BackupStorage, S3BlobStore } from '../src/stores/s3.js';
+import { BackupService } from '../src/admin/backup.js';
+import { reconcile } from '../src/admin/reconcile.js';
 
 /**
  * Интеграционные тесты с настоящими PostgreSQL и MinIO из docker-compose.
@@ -115,6 +117,9 @@ describe('Интеграция: PostgreSQL 17 + MinIO', () => {
       markDeleted: metadata.markDeleted.bind(metadata),
       listPurgeable: metadata.listPurgeable.bind(metadata),
       remove: metadata.remove.bind(metadata),
+      usageByOwner: metadata.usageByOwner.bind(metadata),
+      allIds: metadata.allIds.bind(metadata),
+      stats: metadata.stats.bind(metadata),
       ping: metadata.ping.bind(metadata),
     };
     const service = new NotesService(brokenDb, spyBlobs, { ttlDays: 30, log: { error: () => {} } });
@@ -184,5 +189,41 @@ describe('Интеграция: PostgreSQL 17 + MinIO', () => {
     expect(await securityStore.purgeExpired(new Date())).toBeGreaterThanOrEqual(1);
     expect(await securityStore.isRevoked(jti)).toBe(false);
     await sql`delete from security_events where type = 'test.event'`;
+  });
+
+  it('FR-11 на настоящих PostgreSQL и MinIO: копия → изменение → восстановление → совпадает', async () => {
+    const storage = S3BackupStorage.fromConfig(config.s3, 'notes-backups-test');
+    const backups = new BackupService(metadata, blobs, storage, { keep: 2, log: { error: () => {} } });
+    try {
+      const res = await app.inject({ method: 'POST', url: '/api/notes', payload: await encryptNote('копия', PASSWORD, { iterations: 100_000 }) });
+      const { id } = res.json<{ id: string }>();
+      created.push(id);
+      const blobBefore = Buffer.from((await blobs.get(id))!).toString('base64');
+
+      const manifest = await backups.create();
+      expect(manifest.status).toBe('ok');
+      expect(manifest.blobs[id]).toMatch(/^[0-9a-f]{64}$/);
+
+      // «авария»: строка и блоб пропали
+      await sql`delete from notes where id = ${id}`;
+      await blobs.delete(id);
+      expect((await app.inject({ url: `/api/notes/${id}` })).statusCode).toBe(404);
+
+      const report = await backups.restore(manifest.id);
+      expect(report.blobs).toBeGreaterThanOrEqual(1);
+      expect(Buffer.from((await blobs.get(id))!).toString('base64')).toBe(blobBefore);
+      const back = await app.inject({ url: `/api/notes/${id}` });
+      expect(await decryptNote(back.json(), PASSWORD)).toBe('копия');
+    } finally {
+      await storage.deletePrefix('');
+      storage.close();
+    }
+  });
+
+  it('сверка на настоящем MinIO видит объекты и строки', async () => {
+    const report = await reconcile(metadata, blobs);
+    expect(report.blobs).toBeGreaterThanOrEqual(0);
+    expect(report.rows).toBeGreaterThanOrEqual(0);
+    expect(Array.isArray(report.orphanBlobs)).toBe(true);
   });
 });

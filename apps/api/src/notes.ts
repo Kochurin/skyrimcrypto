@@ -11,6 +11,12 @@ import {
 } from '@cn/crypto';
 import type { IBlobStore, IMetadataStore, NoteSummary } from './stores/types.js';
 
+/** Квоты (FR-10) — см. admin/settings.ts; здесь только то, что нужно сервису. */
+export interface QuotaLimits {
+  maxNoteBytes: number;
+  userQuotaBytes: number;
+}
+
 /**
  * K2.2 Сервис заметок — процесс P3 «Сохранить и выдать зашифрованную заметку» (ЛР5, ЛР7).
  * Сервер никогда не расшифровывает: он лишь проверяет структуру пакета,
@@ -57,8 +63,22 @@ export class NotesService {
   constructor(
     private readonly metadata: IMetadataStore,
     private readonly blobs: IBlobStore,
-    private readonly options: { ttlDays: number; log: Logger; now?: () => Date },
+    private readonly options: { ttlDays: number; log: Logger; now?: () => Date; quotas?: () => Promise<QuotaLimits> },
   ) {}
+
+  private async limits(): Promise<QuotaLimits> {
+    return (await this.options.quotas?.()) ?? { maxNoteBytes: MAX_CIPHERTEXT_BYTES, userQuotaBytes: Number.MAX_SAFE_INTEGER };
+  }
+
+  /** FR-10: сколько занято и сколько можно (для «Моих заметок»). */
+  async usage(ownerId: string): Promise<{ usedBytes: number; quotaBytes: number; maxNoteBytes: number }> {
+    const limits = await this.limits();
+    return {
+      usedBytes: await this.metadata.usageByOwner(ownerId, this.now()),
+      quotaBytes: limits.userQuotaBytes,
+      maxNoteBytes: limits.maxNoteBytes,
+    };
+  }
 
   private now(): Date {
     return this.options.now?.() ?? new Date();
@@ -73,6 +93,22 @@ export class NotesService {
     const pkg = decodePackage(input); // строгая проверка формата, без расшифровки
     if (pkg.ciphertext.length > MAX_CIPHERTEXT_BYTES) {
       throw new ApiError(413, 'TOO_LARGE', 'Заметка больше 10 МБ.');
+    }
+    // FR-10, FR-05: квоты администратора — размер одной заметки и объём на пользователя
+    const limits = await this.limits();
+    // Квота — на размер текста; шифротекст длиннее ровно на тег GCM (16 байт)
+    if (pkg.ciphertext.length - TAG_BYTES > limits.maxNoteBytes) {
+      throw new ApiError(413, 'TOO_LARGE', `Заметка больше ${mb(limits.maxNoteBytes)} — такое ограничение установил администратор.`);
+    }
+    if (opts.ownerId) {
+      const used = await this.metadata.usageByOwner(opts.ownerId, this.now());
+      if (used + pkg.ciphertext.length > limits.userQuotaBytes) {
+        throw new ApiError(
+          403,
+          'QUOTA_EXCEEDED',
+          `Квота исчерпана: занято ${mb(used)} из ${mb(limits.userQuotaBytes)}. Удалите ненужные заметки.`,
+        );
+      }
     }
 
     const id = randomUUID(); // UUID v4: 122 случайных бита, угадать нельзя
@@ -164,4 +200,8 @@ export class NotesService {
     await this.metadata.remove(id);
     return true;
   }
+}
+
+function mb(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} МБ`;
 }

@@ -36,7 +36,9 @@ describe('Маршруты', () => {
     [`/n/${id.toUpperCase()}/`, { page: 'view', id }],
     ['/n/123', { page: 'not-found' }],
     ['/n/../etc', { page: 'not-found' }],
-    ['/admin', { page: 'not-found' }],
+    ['/admin', { page: 'admin' }],
+    ['/audit', { page: 'audit' }],
+    ['/settings', { page: 'not-found' }],
   ])('%s', (path, route) => {
     expect(parseRoute(path)).toEqual(route);
   });

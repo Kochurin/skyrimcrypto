@@ -1,5 +1,7 @@
 import {
   LoginTakenError,
+  type BlobInfo,
+  type Role,
   type IBlobStore,
   type IMetadataStore,
   type IUserStore,
@@ -56,14 +58,33 @@ export class MemoryMetadataStore implements IMetadataStore {
     this.rows.delete(id);
   }
 
+  async usageByOwner(ownerId: string, now: Date): Promise<number> {
+    return [...this.rows.values()].filter((r) => r.ownerId === ownerId && this.active(r, now)).reduce((a, r) => a + r.sizeBytes, 0);
+  }
+
+  async allIds(): Promise<string[]> {
+    return [...this.rows.keys()];
+  }
+
+  async stats(now: Date): Promise<{ notes: number; bytes: number; anonymous: number }> {
+    const active = [...this.rows.values()].filter((r) => this.active(r, now));
+    return { notes: active.length, bytes: active.reduce((a, r) => a + r.sizeBytes, 0), anonymous: active.filter((r) => !r.ownerId).length };
+  }
+
   async ping(): Promise<void> {}
 }
 
 export class MemoryBlobStore implements IBlobStore {
   readonly objects = new Map<string, Uint8Array>();
+  readonly modified = new Map<string, Date>();
 
   async put(id: string, data: Uint8Array): Promise<void> {
     this.objects.set(id, data.slice());
+    this.modified.set(id, new Date());
+  }
+
+  async list(): Promise<BlobInfo[]> {
+    return [...this.objects.entries()].map(([id, d]) => ({ id, size: d.byteLength, lastModified: this.modified.get(id) ?? new Date(0) }));
   }
 
   async get(id: string): Promise<Uint8Array | null> {
@@ -73,6 +94,7 @@ export class MemoryBlobStore implements IBlobStore {
 
   async delete(id: string): Promise<void> {
     this.objects.delete(id);
+    this.modified.delete(id);
   }
 
   async ping(): Promise<void> {}
@@ -99,5 +121,16 @@ export class MemoryUserStore implements IUserStore {
   async updateLock(id: string, failedAttempts: number, lockedUntil: Date | null): Promise<void> {
     const u = this.users.get(id);
     if (u) Object.assign(u, { failedAttempts, lockedUntil });
+  }
+
+  async setRole(login: string, role: Role): Promise<boolean> {
+    const u = [...this.users.values()].find((x) => x.login === login);
+    if (!u) return false;
+    u.role = role;
+    return true;
+  }
+
+  async count(): Promise<number> {
+    return this.users.size;
   }
 }

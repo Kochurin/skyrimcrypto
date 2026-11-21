@@ -1,4 +1,4 @@
-import type { IIpBlockStore, IpBlock, IRevokedTokenStore, ISecurityEventStore, SecurityEvent } from './types.js';
+import type { EventFilter, IIpBlockStore, IpBlock, IRevokedTokenStore, ISecurityEventStore, SecurityEvent } from './types.js';
 
 /** Хранилища этапа 5 в памяти — для модульных тестов. */
 
@@ -16,6 +16,13 @@ export class MemorySecurityEventStore implements ISecurityEventStore {
 
   async recent(limit: number): Promise<SecurityEvent[]> {
     return this.events.slice(-limit).reverse();
+  }
+
+  async search(f: EventFilter): Promise<SecurityEvent[]> {
+    return this.events
+      .filter((e) => (!f.type || e.type.startsWith(f.type)) && (!f.ip || e.ip === f.ip) && (!f.userId || e.userId === f.userId))
+      .slice(-f.limit)
+      .reverse();
   }
 
   async purgeBefore(date: Date): Promise<number> {

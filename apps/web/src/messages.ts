@@ -22,7 +22,7 @@ export function errorMessage(e: unknown): string {
       case 'NETWORK':
         return 'Нет связи с сервером. Текст остался в редакторе — попробуйте ещё раз.';
       case 'TOO_LARGE':
-        return 'Сервер не принял заметку: она больше 10 МБ.';
+        return e.message.includes('администратор') ? e.message : 'Сервер не принял заметку: она больше 10 МБ.';
       case 'UNAUTHORIZED':
         return 'Сессия истекла. Войдите в учётную запись ещё раз.';
       case 'REJECTED':

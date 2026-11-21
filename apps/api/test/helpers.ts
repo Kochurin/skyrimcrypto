@@ -6,6 +6,10 @@ import { MemoryBlobStore, MemoryMetadataStore, MemoryUserStore } from '../src/st
 import { SecurityLog } from '../src/security/audit.js';
 import { DEFAULT_GUARD, SecurityGuard, type GuardOptions } from '../src/security/guard.js';
 import { MemoryIpBlockStore, MemoryRevokedTokenStore, MemorySecurityEventStore } from '../src/security/memory.js';
+import { BackupService, MemoryBackupStorage } from '../src/admin/backup.js';
+import { MemoryAuditReportStore, MemorySnapshotSource } from '../src/admin/memory.js';
+import { reconcile } from '../src/admin/reconcile.js';
+import { MemorySettingsStore, SettingsService } from '../src/admin/settings.js';
 
 export interface SetupOptions {
   now?: () => Date;
@@ -27,11 +31,21 @@ export function setup(opts: SetupOptions = {}) {
   const users = new MemoryUserStore();
   const errors: { obj: object; msg: string }[] = [];
   const clock = opts.now ? { now: opts.now } : {};
+  const settingsStore = new MemorySettingsStore();
+  const settings = new SettingsService(settingsStore);
   const notes = new NotesService(metadata, blobs, {
     ttlDays: 30,
     log: { error: (obj, msg) => errors.push({ obj, msg }) },
+    quotas: () => settings.quotas(),
     ...clock,
   });
+  const backupStorage = new MemoryBackupStorage();
+  const backups = new BackupService(new MemorySnapshotSource(metadata, users, settingsStore), blobs, backupStorage, {
+    keep: 3,
+    log: { error: (obj, msg) => errors.push({ obj, msg }) },
+    ...clock,
+  });
+  const reports = new MemoryAuditReportStore();
   const events = new MemorySecurityEventStore();
   const ipBlocks = new MemoryIpBlockStore();
   const revoked = new MemoryRevokedTokenStore();
@@ -45,9 +59,18 @@ export function setup(opts: SetupOptions = {}) {
     jwtSecret: 'test-secret-test-secret-test-secret',
     ...(opts.trustProxy ? { trustProxy: opts.trustProxy } : {}),
     security: { guard, audit, revoked },
+    admin: {
+      settings,
+      backups,
+      reconcile: () => reconcile(metadata, blobs, opts.now?.() ?? new Date()),
+      metadata,
+      users,
+      events,
+      reports,
+    },
   });
   apps.push(app);
-  return { app, metadata, blobs, users, notes, errors, events, ipBlocks, revoked, audit, guard };
+  return { app, metadata, blobs, users, notes, errors, events, ipBlocks, revoked, audit, guard, settings, backups, backupStorage, reports };
 }
 
 export type App = ReturnType<typeof setup>['app'];

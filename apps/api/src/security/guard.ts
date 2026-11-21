@@ -127,6 +127,11 @@ export class SecurityGuard {
     this.audit.record({ type: 'ip.blocked', ip, details: { reason, until: until.toISOString() } });
   }
 
+  /** Действующие блокировки (из БД — там же причина и дата). */
+  async listBlocks() {
+    return this.store.listActive(this.now());
+  }
+
   async unblock(ip: string): Promise<void> {
     await this.store.remove(ip);
     this.blocked.delete(ip);

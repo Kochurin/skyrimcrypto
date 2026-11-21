@@ -16,7 +16,8 @@
     "check": "npm run typecheck && npm test",
     "dev:api": "npm run dev -w @cn/api",
     "dev:web": "npm run dev -w @cn/web",
-    "build:web": "npm run build -w @cn/web"
+    "build:web": "npm run build -w @cn/web",
+    "set-role": "npm run set-role -w @cn/api --"
   },
   "engines": {
     "node": ">=20"

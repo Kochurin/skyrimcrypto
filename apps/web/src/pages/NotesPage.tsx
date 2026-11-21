@@ -3,14 +3,14 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Scramble } from '../components/Scramble.js';
 import { trackSpotlight } from '../components/Interactive.js';
 import { SPRING } from '../motion/prefs.js';
-import { ApiFailure, deleteNote, listNotes, type NoteSummary } from '../api.js';
+import { ApiFailure, deleteNote, listNotes, type NoteSummary, type Usage } from '../api.js';
 import { formatBytes } from '../document.js';
 import { errorMessage } from '../messages.js';
 import { navigate, noteUrl } from '../route.js';
 import { useSession } from '../session.js';
 import { Alert } from '../components/Alert.js';
 
-type Load = { kind: 'loading' } | { kind: 'failed'; message: string } | { kind: 'ready'; notes: NoteSummary[] };
+type Load = { kind: 'loading' } | { kind: 'failed'; message: string } | { kind: 'ready'; notes: NoteSummary[]; usage: Usage | null };
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -39,7 +39,7 @@ export function NotesPage() {
   const reload = useCallback(() => {
     setLoad({ kind: 'loading' });
     listNotes().then(
-      (notes) => setLoad({ kind: 'ready', notes }),
+      ({ notes, usage }) => setLoad({ kind: 'ready', notes, usage }),
       (err: unknown) => setLoad({ kind: 'failed', message: errorMessage(err) }),
     );
   }, []);
@@ -73,6 +73,7 @@ export function NotesPage() {
         <p>Названия и текст зашифрованы — чтобы прочитать заметку, откройте её и введите её пароль.</p>
       </section>
 
+      {load.kind === 'ready' && load.usage && <UsageBar usage={load.usage} />}
       {load.kind === 'loading' && <p className="muted center">Загрузка списка…</p>}
       {load.kind === 'failed' && (
         <section className="card narrow">
@@ -104,7 +105,7 @@ export function NotesPage() {
                 index={i}
                 note={note}
                 onDeleted={() =>
-                  setLoad((l) => (l.kind === 'ready' ? { kind: 'ready', notes: l.notes.filter((n) => n.id !== note.id) } : l))
+                  setLoad((l) => (l.kind === 'ready' ? { ...l, notes: l.notes.filter((n) => n.id !== note.id) } : l))
                 }
               />
             ))}
@@ -188,5 +189,29 @@ function NoteRow({ note, index, onDeleted }: { note: NoteSummary; index: number;
         )}
       </div>
     </motion.li>
+  );
+}
+
+/** FR-10: сколько места занято из квоты, которую задал администратор. */
+function UsageBar({ usage }: { usage: Usage }) {
+  const share = usage.quotaBytes > 0 ? Math.min(1, usage.usedBytes / usage.quotaBytes) : 0;
+  const level = share > 0.9 ? 'danger' : share > 0.7 ? 'warn' : 'ok';
+  return (
+    <div className="usage" aria-label="Занятое место">
+      <div className="usage-head">
+        <span>
+          Занято <b>{formatBytes(usage.usedBytes)}</b> из {formatBytes(usage.quotaBytes)}
+        </span>
+        <span className="muted small">одна заметка — до {formatBytes(usage.maxNoteBytes)}</span>
+      </div>
+      <div className="usage-track">
+        <motion.span
+          className={`usage-fill ${level}`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: share }}
+          transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+        />
+      </div>
+    </div>
   );
 }

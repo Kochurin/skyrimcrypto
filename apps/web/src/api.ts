@@ -127,13 +127,123 @@ export async function signOut(): Promise<void> {
 
 // ---------- Мои заметки (FR-06, FR-09) ----------
 
-export async function listNotes(): Promise<NoteSummary[]> {
+export interface Usage {
+  usedBytes: number;
+  quotaBytes: number;
+  maxNoteBytes: number;
+}
+
+export async function listNotes(): Promise<{ notes: NoteSummary[]; usage: Usage | null }> {
   const res = await send('/api/notes');
   if (res.status !== 200) throw await failure(res);
-  return ((await res.json()) as { notes: NoteSummary[] }).notes;
+  const body = (await res.json()) as { notes: NoteSummary[]; usage?: Usage };
+  return { notes: body.notes, usage: body.usage ?? null };
 }
 
 export async function deleteNote(id: string): Promise<void> {
   const res = await send(`/api/notes/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (res.status !== 204) throw await failure(res);
 }
+
+// ---------- Этап 6: администратор и аудитор ----------
+
+async function call<T>(url: string, init: RequestInit = {}, okStatus = [200]): Promise<T> {
+  const res = await send(url, init);
+  if (!okStatus.includes(res.status)) throw await failure(res);
+  return (res.status === 204 ? undefined : await res.json()) as T;
+}
+
+const body = (method: string, data: unknown): RequestInit => ({
+  method,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data),
+});
+
+export interface Quotas {
+  maxNoteBytes: number;
+  userQuotaBytes: number;
+}
+
+export interface BackupManifest {
+  id: string;
+  createdAt: string;
+  status: 'ok' | 'failed';
+  notes: number;
+  users: number;
+  bytes: number;
+  failed: string[];
+}
+
+export interface ReconcileReport {
+  at: string;
+  blobs: number;
+  rows: number;
+  orphanBlobs: string[];
+  removedOrphans: number;
+  youngOrphans: number;
+  missingBlobs: string[];
+}
+
+export interface Overview {
+  stats: { notes: number; bytes: number; anonymous: number; users: number };
+  quotas: Quotas;
+  blocks: number;
+  lastBackup: BackupManifest | null;
+  lastReconcile: ReconcileReport | null;
+  health: Record<string, 'ok' | 'down'>;
+}
+
+export interface IpBlockInfo {
+  ip: string;
+  until: string;
+  reason: string;
+  createdAt: string;
+}
+
+export interface SecurityEventInfo {
+  at: string;
+  type: string;
+  ip: string;
+  userId: string | null;
+  status: number | null;
+  details: Record<string, string | number | boolean>;
+}
+
+export interface AuditCheck {
+  id: string;
+  name: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface AuditReportInfo {
+  id: string;
+  at: string;
+  passed: boolean;
+  durationMs: number;
+  checks: AuditCheck[];
+}
+
+export const admin = {
+  overview: () => call<Overview>('/api/admin/overview'),
+  setQuotas: (q: Quotas) => call<{ quotas: Quotas }>('/api/admin/quotas', body('PUT', q)),
+  blocks: () => call<{ blocks: IpBlockInfo[] }>('/api/admin/blocks').then((r) => r.blocks),
+  block: (ip: string, hours: number, reason: string) => call<unknown>('/api/admin/blocks', body('POST', { ip, hours, reason }), [201]),
+  unblock: (ip: string) => call<void>(`/api/admin/blocks/${encodeURIComponent(ip)}`, { method: 'DELETE' }, [204]),
+  events: (filter: { type?: string; ip?: string }) => {
+    const q = new URLSearchParams({ limit: '200' });
+    if (filter.type) q.set('type', filter.type);
+    if (filter.ip) q.set('ip', filter.ip);
+    return call<{ events: SecurityEventInfo[] }>(`/api/admin/events?${q}`).then((r) => r.events);
+  },
+  reconcile: () => call<ReconcileReport>('/api/admin/reconcile', { method: 'POST' }),
+  backups: () => call<{ backups: BackupManifest[] }>('/api/admin/backups').then((r) => r.backups),
+  backup: () => call<BackupManifest>('/api/admin/backups', { method: 'POST' }, [201]),
+  restore: (id: string) => call<{ notes: number; users: number; blobs: number }>(`/api/admin/backups/${encodeURIComponent(id)}/restore`, { method: 'POST' }),
+  setRole: (login: string, role: string) => call<{ login: string; role: string }>('/api/admin/users/role', body('PUT', { login, role })),
+};
+
+export const audit = {
+  save: (checks: AuditCheck[], durationMs: number) => call<{ id: string; passed: boolean }>('/api/audit/reports', body('POST', { checks, durationMs }), [201]),
+  list: () => call<{ reports: AuditReportInfo[] }>('/api/audit/reports').then((r) => r.reports),
+};
