@@ -1,4 +1,8 @@
 import { useId, useState, type FormEvent } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Scramble } from '../components/Scramble.js';
+import { MagneticButton, trackSpotlight } from '../components/Interactive.js';
+import { SPRING, SPRING_IN } from '../motion/prefs.js';
 import { ApiFailure, signIn, signUp } from '../api.js';
 import { errorMessage } from '../messages.js';
 import { navigate } from '../route.js';
@@ -55,16 +59,28 @@ export function LoginPage() {
   }
 
   return (
-    <form className="card narrow" onSubmit={onSubmit} noValidate>
+    <motion.form
+      className="card narrow spot"
+      onSubmit={onSubmit}
+      onPointerMove={trackSpotlight}
+      noValidate
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={SPRING_IN}
+    >
       <div className="tabs" role="tablist">
         <button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'tab active' : 'tab'} onClick={() => switchMode('login')}>
-          Вход
+          {mode === 'login' && <motion.span layoutId="auth-tab" className="pill-bg" transition={SPRING} />}
+          <span className="pill-text">Вход</span>
         </button>
         <button type="button" role="tab" aria-selected={mode === 'register'} className={mode === 'register' ? 'tab active' : 'tab'} onClick={() => switchMode('register')}>
-          Регистрация
+          {mode === 'register' && <motion.span layoutId="auth-tab" className="pill-bg" transition={SPRING} />}
+          <span className="pill-text">Регистрация</span>
         </button>
       </div>
-      <h1>{mode === 'login' ? 'Вход в учётную запись' : 'Новая учётная запись'}</h1>
+      <h1>
+        <Scramble text={mode === 'login' ? 'Вход в учётную запись' : 'Новая учётная запись'} fromCipher duration={600} />
+      </h1>
       <p className="muted">
         Учётная запись хранит список ваших заметок и позволяет их удалять. Содержимое заметок по-прежнему зашифровано
         их собственными паролями — сервер их не знает.
@@ -91,20 +107,34 @@ export function LoginPage() {
         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
         disabled={working}
       />
-      {mode === 'register' && (
-        <PasswordField label="Пароль ещё раз" value={confirm} onChange={setConfirm} autoComplete="new-password" disabled={working} />
-      )}
-      {mode === 'register' && (
-        <p className="hint">Логин: 3–32 символа (латиница, цифры, «.», «-», «_»). Пароль — от 8 символов. Не используйте пароль заметок.</p>
-      )}
+      <AnimatePresence initial={false}>
+        {mode === 'register' && (
+          <motion.div
+            key="register-extra"
+            className="stack-sm"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+          >
+            <PasswordField label="Пароль ещё раз" value={confirm} onChange={setConfirm} autoComplete="new-password" disabled={working} />
+            <p className="hint">Логин: 3–32 символа (латиница, цифры, «.», «-», «_»). Пароль — от 8 символов. Не используйте пароль заметок.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {error && <Alert kind="error">{error}</Alert>}
+      <AnimatePresence>
+        {error && (
+          <motion.div key={error} initial={{ opacity: 0 }} animate={{ opacity: 1, x: [8, -6, 4, 0] }} exit={{ opacity: 0, transition: { duration: 0.12 } }}>
+            <Alert kind="error">{error}</Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="actions">
-        <button type="submit" className="primary" disabled={working}>
+        <MagneticButton type="submit" className={working ? 'primary cta busy' : 'primary cta'} disabled={working}>
           {working ? 'Подождите…' : mode === 'login' ? 'Войти' : 'Создать учётную запись'}
-        </button>
+        </MagneticButton>
       </div>
-    </form>
+    </motion.form>
   );
 }

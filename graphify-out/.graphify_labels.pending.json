@@ -1,6 +1,6 @@
 {
   "0": "note.ts",
-  "1": "notes.ts",
+  "1": "notes-api.test.ts",
   "2": "db",
   "3": "package.json",
   "4": "steps",
@@ -14,8 +14,15 @@
   "12": "server.ts",
   "13": "api/package.json",
   "14": "web/package.json",
-  "15": "NotesService",
+  "15": "api.ts",
   "16": "MemoryBlobStore",
   "17": "real-stores.test.ts",
-  "18": "app.ts"
+  "18": "AuthService",
+  "19": "app.ts",
+  "20": "api/test/helpers.ts",
+  "21": "main.tsx",
+  "22": "accounts.test.tsx",
+  "23": "setup-dom.ts",
+  "24": "buildApp",
+  "25": "scripts"
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { decryptNote, isCryptoError, isSupported } from '@cn/crypto';
 import { fetchNote } from '../api.js';
 import { parseDocument, type NoteDocument } from '../document.js';
@@ -6,6 +7,10 @@ import { errorMessage } from '../messages.js';
 import { navigate } from '../route.js';
 import { Alert } from '../components/Alert.js';
 import { PasswordField } from '../components/PasswordField.js';
+import { MagneticButton, trackSpotlight } from '../components/Interactive.js';
+import { LockIcon } from '../components/LockIcon.js';
+import { Scramble } from '../components/Scramble.js';
+import { motionAllowed, sleep, SPRING_IN } from '../motion/prefs.js';
 
 type Load =
   | { kind: 'loading' }
@@ -71,63 +76,107 @@ function Unlock({ pkg }: { pkg: unknown }) {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<NoteDocument | null>(null);
+  const [opened, setOpened] = useState(false);
+  const [shake, setShake] = useState(0);
   const supported = isSupported();
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (password === '') {
       setError('Введите пароль.');
+      setShake((n) => n + 1);
       return;
     }
     setError(null);
     setWorking(true);
     try {
       const plaintext = await decryptNote(pkg, password);
-      setNote(parseDocument(plaintext));
       setPassword('');
+      // Сначала замок открывается, потом проявляется текст
+      setOpened(true);
+      if (motionAllowed()) await sleep(450);
+      setNote(parseDocument(plaintext));
     } catch (err) {
       setError(errorMessage(err));
+      setShake((n) => n + 1);
       if (!isCryptoError(err, 'DECRYPT_FAILED')) setPassword('');
     } finally {
       setWorking(false);
     }
   }
 
-  if (note) {
-    return (
-      <article className="card reader">
-        <h1 className="note-title">{note.title || 'Без названия'}</h1>
-        {/* Текст выводится только как текстовый узел: React экранирует всё, HTML не исполняется. */}
-        <div className="note-text">{note.text}</div>
-        <div className="actions">
-          <button type="button" onClick={() => setNote(null)}>
-            Скрыть
-          </button>
-          <NewNoteButton />
-        </div>
-      </article>
-    );
+  function hide() {
+    setNote(null);
+    setOpened(false);
   }
 
   return (
-    <form className="card narrow" onSubmit={onSubmit} noValidate>
-      <span className="chip">Зашифровано</span>
-      <h1>Вам передали заметку</h1>
-      <p className="muted">Расшифровка происходит в этом браузере. Пароль на сервер не отправляется.</p>
-      {!supported ? (
-        <Alert kind="warning">Браузер не поддерживает Web Crypto API, расшифровать заметку здесь нельзя.</Alert>
-      ) : (
-        <>
-          <PasswordField label="Пароль" value={password} onChange={setPassword} autoComplete="off" disabled={working} autoFocus />
-          {error && <Alert kind="error">{error}</Alert>}
+    <AnimatePresence mode="wait" initial={false}>
+      {note ? (
+        <motion.article
+          key="note"
+          className="card reader spot"
+          onPointerMove={trackSpotlight}
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -12, transition: { duration: 0.2 } }}
+          transition={SPRING_IN}
+        >
+          <motion.span className="chip ok" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING_IN}>
+            Расшифровано в браузере
+          </motion.span>
+          <h1 className="note-title">
+            <Scramble text={note.title || 'Без названия'} fromCipher duration={700} />
+          </h1>
+          {/* Текст выводится только как текстовый узел: React экранирует всё, HTML не исполняется. */}
+          <Scramble as="div" className="note-text" text={note.text} fromCipher duration={1200} delay={150} />
           <div className="actions">
-            <button type="submit" className="primary" disabled={working}>
-              {working ? 'Расшифровка…' : 'Расшифровать'}
+            <button type="button" onClick={hide}>
+              Скрыть
             </button>
+            <NewNoteButton />
           </div>
-        </>
+        </motion.article>
+      ) : (
+        <motion.form
+          key="unlock"
+          className="card narrow unlock spot"
+          onSubmit={onSubmit}
+          onPointerMove={trackSpotlight}
+          noValidate
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.12 } }}
+          transition={SPRING_IN}
+        >
+          <LockIcon locked={!opened} shake={shake} size={60} className={opened ? 'open' : ''} />
+          <span className="chip">Зашифровано</span>
+          <h1>
+            <Scramble text="Вам передали заметку" fromCipher duration={900} />
+          </h1>
+          <p className="muted">Расшифровка происходит в этом браузере. Пароль на сервер не отправляется.</p>
+          {!supported ? (
+            <Alert kind="warning">Браузер не поддерживает Web Crypto API, расшифровать заметку здесь нельзя.</Alert>
+          ) : (
+            <>
+              <PasswordField label="Пароль" value={password} onChange={setPassword} autoComplete="off" disabled={working} autoFocus />
+              <AnimatePresence>
+                {error && (
+                  <motion.div key={`${error}-${shake}`} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, transition: { duration: 0.12 } }}>
+                    <Alert kind="error">{error}</Alert>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div className="actions">
+                <MagneticButton type="submit" className={working ? 'primary cta busy' : 'primary cta'} disabled={working}>
+                  {working ? 'Расшифровка…' : 'Расшифровать'}
+                </MagneticButton>
+              </div>
+            </>
+          )}
+        </motion.form>
       )}
-    </form>
+    </AnimatePresence>
   );
 }
 

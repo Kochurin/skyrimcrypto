@@ -1,3 +1,5 @@
+import { AnimatePresence, motion, MotionConfig } from 'motion/react';
+import { EASE_OUT } from './motion/prefs.js';
 import { EditorPage } from './pages/EditorPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { NotesPage } from './pages/NotesPage.js';
@@ -8,9 +10,11 @@ import { SessionProvider, useSession } from './session.js';
 /** K1.1 Веб-редактор: создание (US-01), чтение по ссылке (US-02), учётная запись и список (FR-01, FR-06). */
 export function App() {
   return (
-    <SessionProvider>
-      <Shell />
-    </SessionProvider>
+    <MotionConfig reducedMotion="user">
+      <SessionProvider>
+        <Shell />
+      </SessionProvider>
+    </MotionConfig>
   );
 }
 
@@ -19,7 +23,13 @@ function Shell() {
   return (
     <div className="app">
       <Header route={route} />
-      <main>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.main
+          key={route.page === 'view' ? `view-${route.id}` : route.page}
+          initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.45, ease: EASE_OUT } }}
+          exit={{ opacity: 0, y: -8, filter: 'blur(4px)', transition: { duration: 0.18 } }}
+        >
         {route.page === 'editor' && <EditorPage />}
         {route.page === 'login' && <LoginPage />}
         {route.page === 'notes' && <NotesPage />}
@@ -34,7 +44,8 @@ function Shell() {
             </div>
           </section>
         )}
-      </main>
+        </motion.main>
+      </AnimatePresence>
       <footer className="footer mono">PBKDF2-SHA-256 · AES-256-GCM · Web Crypto API</footer>
     </div>
   );
@@ -51,7 +62,8 @@ function NavLink({ to, current, children }: { to: string; current: boolean; chil
         navigate(to);
       }}
     >
-      {children}
+      {current && <motion.span layoutId="nav-pill" className="pill-bg" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+      <span className="pill-text">{children}</span>
     </a>
   );
 }
@@ -69,7 +81,7 @@ function Header({ route }: { route: Route }) {
         }}
       >
         <span className="logo" aria-hidden="true">SC</span>
-        SkyrimCrypto
+        <span className="brand-text">SkyrimCrypto</span>
       </a>
       <span className="chip hide-mobile" title="Шифрование AES-256-GCM в браузере; сервер хранит только шифротекст">
         Zero-Knowledge

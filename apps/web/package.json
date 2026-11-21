@@ -13,6 +13,7 @@
     "@cn/crypto": "*",
     "@fontsource-variable/onest": "^5.3.1",
     "@fontsource/martian-mono": "^5.3.0",
+    "motion": "^14.14.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

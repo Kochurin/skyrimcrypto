@@ -64,6 +64,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* фон-шифр шириной 100vw не должен давать горизонтальную прокрутку (clip не ломает sticky-шапку) */
+  overflow-x: clip;
 }
 
 /* ---------- Шапка ---------- */
@@ -667,5 +669,366 @@ button.ghost-danger:hover:not(:disabled) {
 
   .nav-link {
     padding: 8px;
+  }
+}
+
+/* ================= Анимации и интерактив ================= */
+
+:root {
+  --accent: #1f6b3a;
+  --accent-soft: rgba(31, 107, 58, 0.1);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.scramble {
+  white-space: pre-wrap;
+}
+
+/* --- Фон «поле шифра» за героем --- */
+.hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.cipher-field {
+  position: absolute;
+  z-index: -1;
+  top: -92px;
+  left: 50%;
+  width: 100vw;
+  height: calc(100% + 190px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, #000 30%, transparent 78%);
+}
+
+/* Маркер под словом «адресат.» */
+.marker {
+  position: relative;
+  white-space: nowrap;
+}
+
+.marker::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: -0.06em;
+  right: -0.06em;
+  bottom: 0.08em;
+  height: 0.32em;
+  border-radius: 0.1em;
+  background: #b8f0c8;
+  transform-origin: left center;
+  animation: marker-in 0.9s 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes marker-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* --- Подсветка карточек за курсором --- */
+.spot {
+  position: relative;
+  isolation: isolate;
+}
+
+.spot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), rgba(31, 107, 58, 0.07), transparent 65%);
+}
+
+.spot::after {
+  /* светящаяся рамка рядом с курсором */
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: 1px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), rgba(31, 107, 58, 0.55), transparent 70%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.spot:hover::before,
+.spot:hover::after {
+  opacity: 1;
+}
+
+.steps li.spot {
+  cursor: default;
+  background: var(--soft);
+}
+
+/* --- Церемония шифрования поверх текста --- */
+.sheet {
+  position: relative;
+  scroll-margin-top: 120px; /* не прятаться под липкой шапкой */
+}
+
+.cipher-overlay {
+  position: absolute;
+  inset: 0 0 28px;
+  overflow: hidden;
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--accent);
+  word-break: break-all;
+}
+
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, rgba(31, 107, 58, 0.12), transparent);
+  pointer-events: none;
+}
+
+.composer.working {
+  box-shadow:
+    0 0 0 1px rgba(31, 107, 58, 0.25),
+    0 22px 60px -18px rgba(31, 107, 58, 0.45);
+  transition: box-shadow 0.4s;
+}
+
+/* --- Главная кнопка --- */
+button.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-lock {
+  color: #fff;
+  display: inline-grid;
+}
+
+.cta-lock svg rect:last-child,
+.cta-lock svg circle {
+  display: none;
+}
+
+button.cta.busy::after {
+  /* бегущий блик, пока идёт работа */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.28) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: shimmer 1.1s linear infinite;
+}
+
+button.cta.busy:disabled {
+  opacity: 0.85;
+  cursor: progress;
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* --- Скользящая «пилюля» выбора (вкладки, срок, навигация) --- */
+.pill-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(21, 21, 19, 0.1);
+}
+
+.pill-text {
+  position: relative;
+  z-index: 1;
+}
+
+.nav-link {
+  position: relative;
+}
+
+.nav-link .pill-bg {
+  background: var(--chip);
+  box-shadow: none;
+}
+
+.nav-link.active {
+  background: transparent;
+}
+
+.tabs .tab {
+  position: relative;
+}
+
+.tabs .tab.active {
+  background: transparent;
+  box-shadow: none;
+}
+
+.segmented label.checked {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* --- Замок --- */
+.lock {
+  color: var(--ink);
+  display: inline-grid;
+  place-items: center;
+}
+
+.unlock .lock {
+  align-self: flex-start;
+}
+
+.unlock .lock.open {
+  color: var(--accent);
+}
+
+.saved-badge {
+  position: relative;
+  align-self: flex-start;
+  display: grid;
+  place-items: center;
+}
+
+.saved .lock {
+  color: var(--accent);
+}
+
+.burst {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.burst-glyph {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+/* --- Надёжность пароля --- */
+.strength {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 34px;
+}
+
+.strength-track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  height: 4px;
+}
+
+.strength-seg {
+  display: block;
+  height: 4px;
+  border-radius: 4px;
+  transform-origin: left center;
+  background: var(--chip);
+}
+
+.strength-track {
+  background: linear-gradient(90deg, var(--chip) 0 100%);
+  background-clip: content-box;
+  border-radius: 4px;
+}
+
+.strength-label,
+.match {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.match.ok {
+  color: var(--accent);
+}
+
+.match.bad {
+  color: var(--warn);
+}
+
+/* --- Уважение к «уменьшить движение» --- */
+@media (prefers-reduced-motion: reduce) {
+  .marker::after,
+  button.cta.busy::after {
+    animation: none;
+  }
+
+  .spot::before,
+  .spot::after {
+    transition: none;
+  }
+}
+
+.nav-link {
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .brand-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .topbar {
+    padding: 0 12px;
+    gap: 4px;
+  }
+
+  .nav-link {
+    font-size: 0.8rem;
+    padding: 8px 9px;
+  }
+
+  .topbar button.small {
+    padding: 0 12px;
   }
 }

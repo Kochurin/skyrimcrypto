@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Scramble } from '../components/Scramble.js';
+import { trackSpotlight } from '../components/Interactive.js';
+import { SPRING } from '../motion/prefs.js';
 import { ApiFailure, deleteNote, listNotes, type NoteSummary } from '../api.js';
 import { formatBytes } from '../document.js';
 import { errorMessage } from '../messages.js';
@@ -63,7 +67,9 @@ export function NotesPage() {
   return (
     <>
       <section className="hero compact">
-        <h1>Мои заметки</h1>
+        <h1>
+          <Scramble text="Мои заметки" fromCipher duration={700} />
+        </h1>
         <p>Названия и текст зашифрованы — чтобы прочитать заметку, откройте её и введите её пароль.</p>
       </section>
 
@@ -91,22 +97,25 @@ export function NotesPage() {
       )}
       {load.kind === 'ready' && load.notes.length > 0 && (
         <ul className="note-list" aria-label="Список заметок">
-          {load.notes.map((note) => (
-            <NoteRow
-              key={note.id}
-              note={note}
-              onDeleted={() =>
-                setLoad((l) => (l.kind === 'ready' ? { kind: 'ready', notes: l.notes.filter((n) => n.id !== note.id) } : l))
-              }
-            />
-          ))}
+          <AnimatePresence>
+            {load.notes.map((note, i) => (
+              <NoteRow
+                key={note.id}
+                index={i}
+                note={note}
+                onDeleted={() =>
+                  setLoad((l) => (l.kind === 'ready' ? { kind: 'ready', notes: l.notes.filter((n) => n.id !== note.id) } : l))
+                }
+              />
+            ))}
+          </AnimatePresence>
         </ul>
       )}
     </>
   );
 }
 
-function NoteRow({ note, onDeleted }: { note: NoteSummary; onDeleted: () => void }) {
+function NoteRow({ note, index, onDeleted }: { note: NoteSummary; index: number; onDeleted: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [working, setWorking] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -138,7 +147,15 @@ function NoteRow({ note, onDeleted }: { note: NoteSummary; onDeleted: () => void
   }
 
   return (
-    <li className="note-row">
+    <motion.li
+      className="note-row spot"
+      onPointerMove={trackSpotlight}
+      layout
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0, transition: { delay: Math.min(index, 8) * 0.06, ...SPRING } }}
+      exit={{ opacity: 0, x: 60, scale: 0.96, transition: { duration: 0.22 } }}
+      whileHover={{ y: -3 }}
+    >
       <div className="note-meta">
         <span className="note-name">Заметка от {formatDate(note.createdAt)}</span>
         <span className="muted small">
@@ -170,6 +187,6 @@ function NoteRow({ note, onDeleted }: { note: NoteSummary; onDeleted: () => void
           </>
         )}
       </div>
-    </li>
+    </motion.li>
   );
 }
