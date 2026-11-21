@@ -5,12 +5,17 @@
   "3": "package.json",
   "4": "steps",
   "5": "compilerOptions",
-  "6": "kdf.test.ts",
+  "6": "EditorPage.tsx",
   "7": "crypto/package.json",
   "8": "tsconfig.json",
   "9": "Crypto Notepad",
   "10": "Crypto Notepad",
   "11": "PostgresMetadataStore",
   "12": "server.ts",
-  "13": "api/package.json"
+  "13": "api/package.json",
+  "14": "web/package.json",
+  "15": "NotesService",
+  "16": "MemoryBlobStore",
+  "17": "real-stores.test.ts",
+  "18": "app.ts"
 }

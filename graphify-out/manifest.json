@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1795219816.3078089,
-    "seen": 1795219897.4894156,
-    "ast_hash": "21b7f9a34920ba005461ac4c891cc6e5",
+    "mtime": 1795220278.1918988,
+    "seen": 1795220457.9696472,
+    "ast_hash": "1edd273a0a211387458f5645ea75db28",
     "semantic_hash": ""
   },
   "packages/crypto/package.json": {
@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "vitest.config.ts": {
-    "mtime": 1795218309.4607916,
-    "seen": 1795218491.6405768,
-    "ast_hash": "8614b18abcdadcffe0851f9db3e86fb2",
+    "mtime": 1795220283.852872,
+    "seen": 1795220457.9696681,
+    "ast_hash": "7fb844b4314cb8a7ba57b676e73503cb",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795219885.795074,
-    "seen": 1795219897.489444,
-    "ast_hash": "61829f91c38d91f8cb4037790e4abd34",
+    "mtime": 1795220436.8828454,
+    "seen": 1795220457.9696722,
+    "ast_hash": "d97c3b1b40b1026b996f4213e85d1405",
     "semantic_hash": ""
   },
   ".claude/settings.json": {
@@ -209,10 +209,118 @@
     "ast_hash": "272e4e062c5a75c14e7762f21d1d3d0f",
     "semantic_hash": ""
   },
+  ".claude/launch.json": {
+    "mtime": 1795220372.087449,
+    "seen": 1795220457.9695954,
+    "ast_hash": "da2d4c82846c4f79d20d7e06b5ebc7b5",
+    "semantic_hash": ""
+  },
+  "apps/web/package.json": {
+    "mtime": 1795220325.628124,
+    "seen": 1795220457.969627,
+    "ast_hash": "00fada69a5e1fe7d943c87172ce83575",
+    "semantic_hash": ""
+  },
+  "apps/web/src/App.tsx": {
+    "mtime": 1795220271.919783,
+    "seen": 1795220457.9696286,
+    "ast_hash": "948ef777393707b2feb2294807d36f04",
+    "semantic_hash": ""
+  },
+  "apps/web/src/api.ts": {
+    "mtime": 1795220189.2777421,
+    "seen": 1795220457.96963,
+    "ast_hash": "2289fe405c3ab11b04dd57201cb20478",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/Alert.tsx": {
+    "mtime": 1795220237.5897691,
+    "seen": 1795220457.9696312,
+    "ast_hash": "33375f602bcf6374e345b9efef94c294",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/PasswordField.tsx": {
+    "mtime": 1795220237.524443,
+    "seen": 1795220457.9696326,
+    "ast_hash": "07147157e9bf14f50af8dd7b11636bb6",
+    "semantic_hash": ""
+  },
+  "apps/web/src/document.ts": {
+    "mtime": 1795220189.2967656,
+    "seen": 1795220457.9696333,
+    "ast_hash": "5ff168d01c9fe8e0e58e6bd476a75e78",
+    "semantic_hash": ""
+  },
+  "apps/web/src/main.tsx": {
+    "mtime": 1795220271.9890475,
+    "seen": 1795220457.9696345,
+    "ast_hash": "eea9b90ddaaaf9db3eb267ff4a524996",
+    "semantic_hash": ""
+  },
+  "apps/web/src/messages.ts": {
+    "mtime": 1795220189.3353198,
+    "seen": 1795220457.9696367,
+    "ast_hash": "0f55aa6f3c16e6ac902c51719b94a3c8",
+    "semantic_hash": ""
+  },
+  "apps/web/src/pages/EditorPage.tsx": {
+    "mtime": 1795220427.0693607,
+    "seen": 1795220457.9696374,
+    "ast_hash": "594c18bc2c10d785c4a2152583ec4fd9",
+    "semantic_hash": ""
+  },
+  "apps/web/src/pages/ViewPage.tsx": {
+    "mtime": 1795220271.8583438,
+    "seen": 1795220457.9696383,
+    "ast_hash": "c4762903408907c4b43220b420bb0bc0",
+    "semantic_hash": ""
+  },
+  "apps/web/src/route.ts": {
+    "mtime": 1795220189.316302,
+    "seen": 1795220457.9696398,
+    "ast_hash": "86608bfeffa62390b732dd3ede84de9f",
+    "semantic_hash": ""
+  },
+  "apps/web/test/app.test.tsx": {
+    "mtime": 1795220336.6108115,
+    "seen": 1795220457.9696407,
+    "ast_hash": "7263fe32b94dbfde0aa1def15b77792f",
+    "semantic_hash": ""
+  },
+  "apps/web/test/units.test.ts": {
+    "mtime": 1795220319.1398365,
+    "seen": 1795220457.969642,
+    "ast_hash": "5c4edfcac5588442fd0bc12a750351a7",
+    "semantic_hash": ""
+  },
+  "apps/web/tsconfig.json": {
+    "mtime": 1795220155.314253,
+    "seen": 1795220457.969643,
+    "ast_hash": "7915efe4d3673a471eaeb0406dd1847e",
+    "semantic_hash": ""
+  },
+  "apps/web/vite.config.ts": {
+    "mtime": 1795220155.3336456,
+    "seen": 1795220457.9696438,
+    "ast_hash": "3e14b68b3b4524e2dc80720ec886d7a4",
+    "semantic_hash": ""
+  },
+  "apps/web/index.html": {
+    "mtime": 1795220155.3521585,
+    "seen": 1795220457.9696734,
+    "ast_hash": "e7c291d7ede5f2933d6396583b96d2cf",
+    "semantic_hash": ""
+  },
+  "apps/web/public/favicon.svg": {
+    "mtime": 1795220155.371175,
+    "seen": 1795220457.9696746,
+    "ast_hash": "64d9fb05bf81451d4c253af8cce27a4e",
+    "semantic_hash": ""
+  },
   "package-lock.json": {
-    "mtime": 1795219820.4273436,
-    "seen": 1795219897.4894454,
-    "ast_hash": "5e3bfd61278b3a3e3ea7c945a199a61c",
+    "mtime": 1795220325.658887,
+    "seen": 1795220457.9696758,
+    "ast_hash": "cf3312698f6205c57571f9a850273cb7",
     "semantic_hash": ""
   }
 }

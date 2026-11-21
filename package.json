@@ -11,9 +11,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "typecheck": "tsc -p packages/crypto --noEmit && tsc -p apps/api --noEmit",
+    "typecheck": "tsc -p packages/crypto --noEmit && tsc -p apps/api --noEmit && tsc -p apps/web --noEmit",
     "check": "npm run typecheck && npm test",
-    "dev:api": "npm run dev -w @cn/api"
+    "dev:api": "npm run dev -w @cn/api",
+    "dev:web": "npm run dev -w @cn/web",
+    "build:web": "npm run build -w @cn/web"
   },
   "engines": {
     "node": ">=20"
